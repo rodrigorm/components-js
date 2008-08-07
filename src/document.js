@@ -8,7 +8,6 @@ extend(document, {
 
   register: function(callback) {
     var userAgent = navigator.userAgent.toLowerCase();
-    var ie = /*@cc_on!@*/false;
 
     if (/webkit/.test(userAgent)) {
       var timeout = setTimeout(function() {
@@ -20,12 +19,13 @@ extend(document, {
       }, 10); 
     } else if ((/mozilla/.test(userAgent) && !/(compatible)/.test(userAgent)) || (/opera/.test(userAgent))) {
       document.addEventListener('DOMContentLoaded', callback, false);
-    } else if (ie) {
+    } else if (document.uniqueID && document.expando) { // ie
       // http://www.hedgerwow.com/360/dhtml/ie-dom-ondocumentready.html
+      var tempNode = document.createElement('document:ready'); 
+      
       (function () { 
         if (document.loaded) return;
 
-        var tempNode = document.createElement('document:ready'); 
         try {
           tempNode.doScroll('left');
           
