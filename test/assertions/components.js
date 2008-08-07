@@ -98,6 +98,35 @@ assert('inserting a component in the same position leaves the tree unchanged (us
   return this.collect('s') == 'one,two';
 });
 
+assert('remove all child instances of a component', function() {
+  var i = 0;
+  
+  this.append(x(x(x())));
+  this.append(x());
+  this.append(x());
+
+  while (this.x) {
+    this.x.remove();
+    i++;
+  }
+
+  return !this.x && i == 3 && this.collect('x').length == 0;
+});
+
+assert('remove all sub instances of a component', function() {
+  var i = 0;
+  
+  this.append(x(x(x())));
+  this.append(x());
+
+  while (this.x) {
+    this.last('x').remove();
+    i++;
+  }
+
+  return !this.x && i == 4 && this.collect('x').length == 0;
+});
+
 assert('append a component that is already the last component but not the last node', function() {
   this.append(div('x', s('one') + s('two') + div('foo')));
 
