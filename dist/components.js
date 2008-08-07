@@ -453,6 +453,9 @@ var Container = Class.create({
           
           // If there is a later child with this name, move pointer to that:
           var c = this.getNext(name);
+          
+          while (c && this.contains(c))
+            c = c.next()
 
           if (c && this.container.contains(c))
             this.container.set(name, c);            
