@@ -201,6 +201,12 @@ var Component = Class.create({
       target.detachEvent('on' + event, listener);
   },
 
+  unregisterListeners: function() {
+    for (var name in this.listeners)
+      for (var event in this.listeners[name])
+        this.unregisterListener(event, name);
+  },
+
   createListener: function(method) {
     var component = this, listener = function(event) {
       event = event || window.event;
@@ -223,14 +229,6 @@ var Component = Class.create({
       }
     else
       return listener;
-  },
-  
-  unload: function() {
-    for (var name in this.listeners)
-      for (var event in this.listeners[name])
-        this.unregisterListener(event, name);
-    
-    this.element = null;
   },
 
   toString: function() {
@@ -366,7 +364,7 @@ var Tree = Class.create({
   registerUnload: function() {
     if (window.attachEvent) {
       var tree = this; 
-      window.attachEvent('onunload', function() { tree.invoke('unload') });
+      window.attachEvent('onunload', function() { tree.invoke('unregisterListeners') });
     }
   }
 });
@@ -570,17 +568,17 @@ var Container = Class.create({
     
     return this.objects[id] = object;
   },
+  
+  unregisterListeners: function() {
+    for (var name in this.components)
+      this.components[name].unregisterListeners();
+  },
 
   unset: function(id) {
     for (var name in this.components)
       this.components[name].unset(id);
 
     delete(this.objects[id]);
-  },
-  
-  unload: function() {
-    for (var name in this.components)
-      this.components[name].unload();
   },
     
   collect: function(name) {

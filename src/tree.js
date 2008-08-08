@@ -70,7 +70,7 @@ var Tree = Class.create({
   registerUnload: function() {
     if (window.attachEvent) {
       var tree = this; 
-      window.attachEvent('onunload', function() { tree.invoke('unload') });
+      window.attachEvent('onunload', function() { tree.invoke('unregisterListeners') });
     }
   }
 });
@@ -274,17 +274,17 @@ var Container = Class.create({
     
     return this.objects[id] = object;
   },
+  
+  unregisterListeners: function() {
+    for (var name in this.components)
+      this.components[name].unregisterListeners();
+  },
 
   unset: function(id) {
     for (var name in this.components)
       this.components[name].unset(id);
 
     delete(this.objects[id]);
-  },
-  
-  unload: function() {
-    for (var name in this.components)
-      this.components[name].unload();
   },
     
   collect: function(name) {

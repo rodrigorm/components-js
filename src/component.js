@@ -166,6 +166,12 @@ var Component = Class.create({
       target.detachEvent('on' + event, listener);
   },
 
+  unregisterListeners: function() {
+    for (var name in this.listeners)
+      for (var event in this.listeners[name])
+        this.unregisterListener(event, name);
+  },
+
   createListener: function(method) {
     var component = this, listener = function(event) {
       event = event || window.event;
@@ -188,14 +194,6 @@ var Component = Class.create({
       }
     else
       return listener;
-  },
-  
-  unload: function() {
-    for (var name in this.listeners)
-      for (var event in this.listeners[name])
-        this.unregisterListener(event, name);
-    
-    this.element = null;
   },
 
   toString: function() {
