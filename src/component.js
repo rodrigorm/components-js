@@ -62,7 +62,7 @@ var Component = Class.create({
   unset: function(name) {
     if (this[name]) {
       for (var event in (this.matches[name] || {}))
-        this.unregisterAsListener(event, name, this.matches[name][event]);
+        this.unregisterListener(event, name, this.matches[name][event]);
       
       delete(this[name]);
     }
@@ -155,7 +155,7 @@ var Component = Class.create({
       target.attachEvent('on' + event, listener);
   },
 
-  unregisterAsListener: function(event, name, method) {
+  unregisterListener: function(event, name) {
     var target = this[name].element || this[name], listener = this.listeners[name][event];
     
     delete(this.listeners[name][event]);
@@ -188,6 +188,14 @@ var Component = Class.create({
       }
     else
       return listener;
+  },
+  
+  unload: function() {
+    for (var name in this.listeners)
+      for (var event in this.listeners[name])
+        this.unregisterListener(event, name);
+    
+    this.element = null;
   },
 
   toString: function() {

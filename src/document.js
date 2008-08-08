@@ -1,5 +1,5 @@
-extend(document, {
-    
+var DocumentMethods = {
+   
   bindings: {},
   
   bind: function(name, source) {
@@ -85,7 +85,9 @@ extend(document, {
 
     return fragment;
   }
-});
+};
+
+extend(document, DocumentMethods);
 
 var Tags = {
   

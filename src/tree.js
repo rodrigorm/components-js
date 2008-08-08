@@ -2,11 +2,9 @@ var Tree = Class.create({
   
   initialize: function(element, container) {
     this.klasses = element.ownerDocument.bindings;
-
     this.load(element, container);
-
     this.invoke('run');
-    //this.registerUnload();
+    this.registerUnload();
   },
   
   load: function(element, parent) {
@@ -282,6 +280,11 @@ var Container = Class.create({
       this.components[name].unset(id);
 
     delete(this.objects[id]);
+  },
+  
+  unload: function() {
+    for (var name in this.components)
+      this.components[name].unload();
   },
     
   collect: function(name) {

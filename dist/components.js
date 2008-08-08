@@ -97,7 +97,7 @@ var Component = Class.create({
   unset: function(name) {
     if (this[name]) {
       for (var event in (this.matches[name] || {}))
-        this.unregisterAsListener(event, name, this.matches[name][event]);
+        this.unregisterListener(event, name, this.matches[name][event]);
       
       delete(this[name]);
     }
@@ -190,7 +190,7 @@ var Component = Class.create({
       target.attachEvent('on' + event, listener);
   },
 
-  unregisterAsListener: function(event, name, method) {
+  unregisterListener: function(event, name) {
     var target = this[name].element || this[name], listener = this.listeners[name][event];
     
     delete(this.listeners[name][event]);
@@ -223,6 +223,14 @@ var Component = Class.create({
       }
     else
       return listener;
+  },
+  
+  unload: function() {
+    for (var name in this.listeners)
+      for (var event in this.listeners[name])
+        this.unregisterListener(event, name);
+    
+    this.element = null;
   },
 
   toString: function() {
@@ -290,11 +298,9 @@ var Tree = Class.create({
   
   initialize: function(element, container) {
     this.klasses = element.ownerDocument.bindings;
-
     this.load(element, container);
-
     this.invoke('run');
-    //this.registerUnload();
+    this.registerUnload();
   },
   
   load: function(element, parent) {
@@ -571,6 +577,11 @@ var Container = Class.create({
 
     delete(this.objects[id]);
   },
+  
+  unload: function() {
+    for (var name in this.components)
+      this.components[name].unload();
+  },
     
   collect: function(name) {
     var list = [];
@@ -842,8 +853,8 @@ var Transition = Class.create({
 
 Transition.rate = 50;
 
-extend(document, {
-    
+var DocumentMethods = {
+   
   bindings: {},
   
   bind: function(name, source) {
@@ -929,7 +940,9 @@ extend(document, {
 
     return fragment;
   }
-});
+};
+
+extend(document, DocumentMethods);
 
 var Tags = {
   
