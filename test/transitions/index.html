@@ -17,7 +17,7 @@
 
 <script type="text/javascript" charset="utf-8">
 
-document.bind('list', {
+bind('list', {
 
   onClickCreate: function() {
     this.request('GET', this.create.href);
@@ -29,9 +29,9 @@ document.bind('list', {
   }
 });
 
-document.bind('items');
+bind('items');
 
-document.bind('item', {
+bind('item', {
   
   onClickRemover: function() {
     this.remove(250);

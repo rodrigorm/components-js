@@ -1,7 +1,6 @@
 var Tree = Class.create({
   
   initialize: function(element, container) {
-    this.klasses = element.ownerDocument.bindings;
     this.load(element, container);
     this.invoke('run');
     this.registerUnload();
@@ -24,9 +23,9 @@ var Tree = Class.create({
         if (id != element.id)
           ids.push(id);
         
-        if (this.klasses[id]) {
+        if (bindings[id]) {
           container = container || this.push(new Container(element, ids, components, parent));
-          components[id] = new this.klasses[id](container, id);
+          components[id] = new bindings[id](container, id);
         }
         if (parent) {
           parent.objects[id] || parent.set(id, components[id] || element);
@@ -121,7 +120,7 @@ var Container = Class.create({
      
   insert: function(component, next, duration) {
     if (typeof component == 'string')
-      component = this.element.ownerDocument.load(component);
+      component = load(component);
     
     var prev, container = this, insert = component.container;
     

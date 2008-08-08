@@ -79,7 +79,7 @@ var Request = Class.create({
     
     if (text && text != ' ') {
       if (type.match(/html/i)) {
-        return this.component.document.build(text);
+        return build(text);
       } else if (type.match(/json/i)) {
         return eval('(' + text + ')');
       }  

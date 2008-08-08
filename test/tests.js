@@ -1,6 +1,6 @@
-document.bind('contents');
+bind('contents');
 
-document.bind('tests', {
+bind('tests', {
   
   run: function() {
     this.count = 0;
@@ -61,10 +61,10 @@ var Assertion = Class.create({
     this.attempts    = 0;
 
     for (var name in this.definitions)
-      this.handler.document.bind(name, this.definitions[name]);
+      bind(name, this.definitions[name]);
     
-    this.contents = this.handler.insert( this.handler.document.load(div('contents')) );
-    this.message  = this.handler.document.load(div('message'));
+    this.contents = this.handler.insert( load(div('contents')) );
+    this.message  = load(div('message'));
     
     if (this.setup)
       this.setup.apply(this.contents);
@@ -103,7 +103,7 @@ var Assertion = Class.create({
   
   teardown: function() {
     for (var name in this.definitions)
-      delete(this.handler.document.bindings[name]);
+      delete(bindings[name]);
     
     this.contents.remove();
   },

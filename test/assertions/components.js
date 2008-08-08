@@ -1,15 +1,15 @@
 assert('we can build elements from HTML', function() {
-  return this.document.build('<p></p>').tagName == 'P';
+  return build('<p></p>').tagName == 'P';
 });
 
 assert('we can build orphaned table and list elements from HTML', function() {
-  return this.document.build('<td></td>').tagName == 'TD' &&
-         this.document.build('<tr></tr>').tagName == 'TR' &&
-         this.document.build('<li></li>').tagName == 'LI';
+  return build('<td></td>').tagName == 'TD' &&
+         build('<tr></tr>').tagName == 'TR' &&
+         build('<li></li>').tagName == 'LI';
 });
 
 assert('loading HTML initializes defined components', function() {
-  return this.document.load('<div id="x"></div>').element.tagName == 'DIV';
+  return load('<div id="x"></div>').element.tagName == 'DIV';
 });
 
 assert('a component is identified by either a class name or an id', function() {
@@ -138,7 +138,7 @@ assert('append a component that is already the last component but not the last n
 assert('names used by Component are ignored when setting element/component properties', function() {
   this.append(x());
 
-  var component = this.document.load(y());
+  var component = load(y());
 
   this.x.set('name',      component);
   this.x.set('container', component);
@@ -284,7 +284,7 @@ assert('handle elements by running callbacks for any top-level components', func
   this.x.addY = function() { handledY = true };
   this.x.addZ = function() { handledZ = true };
   
-  this.x.add(this.document.build(div('y z', x())));
+  this.x.add(build(div('y z', x())));
   
   return !handledX && handledY && handledZ;
 });
@@ -306,7 +306,7 @@ assert('clone(tree) return a copy of the entire tree', function() {
 assert('handle an element with insertion', function() {
   this.insert(x());
   this.x.addY = function(y) { this.append(y) };
-  this.x.add(this.document.build(y(z())));
+  this.x.add(build(y(z())));
 
   return this.x.y.z.y.x == this.x;
 });
@@ -319,7 +319,7 @@ assert('appropriately named methods are automatically registered as event listen
     onMouseOverX:  function() {},
     _onMouseOverY: function() {}
     
-  }))(this.document.load(x()));
+  }))(load(x()));
   
   return !component.matches.x.click && (component.matches.x.mouseover == 'onMouseOverX') && !component.matches.y
 });
@@ -328,7 +328,7 @@ assert('listeners are registered after a component or element property is set', 
   
   var component = new (Component.extend({    
     onClickY: function() {}
-  }))(this.document.load(x()));
+  }))(load(x()));
   
   return !component.listeners.y && 
        !!(component.set('y', this)) && 
@@ -337,10 +337,10 @@ assert('listeners are registered after a component or element property is set', 
         !component.listeners.y.click;
 });
 
-document.bind('x');
-document.bind('y');
-document.bind('z');
-document.bind('s', {
+bind('x');
+bind('y');
+bind('z');
+bind('s', {
   toString: function() {
     return this.element.innerHTML;
   }
