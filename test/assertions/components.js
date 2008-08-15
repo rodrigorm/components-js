@@ -241,28 +241,6 @@ assert('update text for container elements', function() {
   return this.x.b.innerHTML == 'One!' && this.x.c.innerHTML == 'Two!';
 }),
 
-assert('flags are unique names prepended to the class name', function() {
-  this.insert(x());
-
-  this.x.apply('a');
-  this.x.apply('b');
-  this.x.apply('b');
-  this.x.apply('c');
-  this.x.clear('c');
-  this.x.clear('c');
-  
-  return (this.x.element.className == 'b a x') && this.x.a && this.x.b && !this.x.c;
-});
-  
-assert('a component can only select one other component at a time', function() {
-  this.append(x());
-  this.x.append(y());
-  this.x.append(z());
-  this.select(this.x.y);
-  this.select(this.x.z);
-  return (this.selected == this.x.z) && this.x.z.selected && !this.x.y.selected;
-});
-
 assert('each() is safe for iterations during which sub containers are removed', function() {
   this.append(s('one'));
   this.append(s('two'));
@@ -335,6 +313,60 @@ assert('listeners are registered after a component or element property is set', 
        !!component.listeners.y.click &&
        !(component.unset('y')) &&
         !component.listeners.y.click;
+});
+
+assert('flags are unique names prepended to the class name', function() {
+  this.insert(x());
+
+  this.x.apply('a');
+  this.x.apply('b');
+  this.x.apply('b');
+  this.x.apply('c');
+  this.x.clear('c');
+  this.x.clear('c');
+  
+  return (this.x.element.className == 'b a x') && this.x.a && this.x.b && !this.x.c;
+});
+  
+assert('a component can only select one other component at a time', function() {
+  this.append(x());
+  this.x.append(y());
+  this.x.append(z());
+  this.select(this.x.y);
+  this.select(this.x.z);
+
+  return (this.selected == this.x.z) && !!this.x.z.selected && !this.x.y.selected;
+});
+
+// assert('set flag for initially-selected component', function() {
+//   this.insert(x(div('s', 'one') + div('selected s', 'two') + div('s', 'three')));
+//   
+//   return this.x.s.next().selected === true;
+//   return this.x.selected == this.x.s.next();
+// });
+
+assert('apply should overwrite the named property if it already exists', function() {
+  this.append(x());
+  this.x.i = 2;
+  this.x.apply('i');
+  return this.x.element.className == 'i x' && this.x.i === true;
+});
+
+assert('clear should remove a class name even if the named property is not a boolean, and overwrite it', function() {
+  this.append(x());
+  this.x.apply('p');
+  this.x.p = 2;
+  this.x.clear('p');
+  return this.x.element.className == 'x' && this.x.p === false;
+});
+
+assert('if a component is a selecting another component, and it itself is selected by a component, this.selected accesses the other component rather than being a flag', function() {
+  this.append(x(y()));
+  this.x.select(this.x.y);
+  this.select(this.x);
+  this.select();
+
+  return !this.selected && this.x.selected == this.x.y;
 });
 
 bind('x');

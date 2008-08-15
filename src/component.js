@@ -4,6 +4,7 @@ var Component = Class.create({
     this.container = container;
     this.name      = name;
     this.listeners = {};
+    this.processes = {};
     
     this.set('window',   window);
     this.set('document', container.element.ownerDocument || document);
@@ -72,19 +73,19 @@ var Component = Class.create({
     new Request(this, method, url, parameters).send();
   },
   
-  setInterval: function(period) {
-    if (!this.onInterval)
-      throw new Error(this.name + '#onInterval is not defined');
+  start: function(name, period) {
+    if (!this[name])
+      throw new Error(this.name + '#' + name + ' is not defined');
       
     var component = this;
     
-    this.interval = setInterval(function() { component.onInterval() }, period);
+    this.processes[name] = this.processes[name] || setInterval(function() { component[name]() }, period);
   },
   
-  clearInterval: function() {
-    if (this.interval) {
-      clearInterval(this.interval);
-      this.interval = null;        
+  stop: function(name) {
+    if (this.processes[name]) {
+      clearInterval(this.processes[name]);
+      this.processes[name] = null;
     }
   },
 
@@ -94,10 +95,8 @@ var Component = Class.create({
 
   apply: function(name) {
     if (arguments.length == 1) {
-      if (!this[name]) {
-        this.container.addName(name)
-        this[name] = true;
-      }
+      this.container.addName(name)
+      this[name] = true;
     } else {
       for (var i = 0; i < arguments.length; i++)
         this.apply(arguments[i]);
@@ -106,10 +105,8 @@ var Component = Class.create({
   
   clear: function(name) {
     if (arguments.length == 1) {
-      if (this[name]) {
-        this.container.removeName(name);
-        this[name] = false;
-      }
+      this.container.removeName(name);
+      this[name] = false;
     } else {
       for (var i = 0; i < arguments.length; i++)
         this.clear(arguments[i]);
@@ -120,11 +117,19 @@ var Component = Class.create({
     if (this.selected == component)
       return;
 
-    if (this.selected)
-      this.selected.clear('selected');
+    if (typeof this.selected == 'object') {
+      if (this.selected.selected === true)
+        this.selected.selected = false;
+
+      this.selected.container.removeName('selected');
+    }
     
-    if (this.selected = component)
-      component.apply('selected');
+    if (this.selected = component) {
+      component.container.addName('selected');
+      
+      if (!component.selected)
+        component.selected = true;
+    }
   },
       
   getHTML:   function() { return this.element.innerHTML },  
@@ -197,7 +202,7 @@ var Component = Class.create({
   },
 
   toString: function() {
-    return this.container.toString();
+    return this.element.id || this.container.toString();
   }
 });
 

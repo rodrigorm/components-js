@@ -40,17 +40,17 @@ function register(callback) {
   }
 };
   
-function load(element) {
-  if (typeof element == 'string')
-    element = build(element);
+function load(object) {
+  if (typeof object == 'string')
+    object = build(object);
   
-  var tree = new Tree(element);
+  var tree = new Tree(object);
   
-  if (tree.i && tree.i.element == element)
+  if (tree.i && tree.i.element == object)
     for (var name in tree.i.components)
       return tree.i.components[name];
   
-  return element;
+  return object;
 };
     
 function build(text) {
