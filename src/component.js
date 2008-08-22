@@ -105,7 +105,7 @@ var Component = Class.create({
     return component;
   },
     
-  registerEventListeners: function() {
+  createListeners: function() {
     var element, attr;
     
     for (var target in this.matches)

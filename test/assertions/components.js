@@ -358,6 +358,24 @@ assert('replace a container tag', function() {
   return this.x.element.tagName == 'P' && this.x.collect('s') == 'a,b,c';
 });
 
+assert('create listeners for properties created during run', {
+  
+  a: {
+    run: function() {
+      this.foo = this.element;
+      this.bar = this.element;
+    },
+    
+    onMouseOverFoo: function() {},
+
+    onMouseOutBar: function() {}
+  }
+  
+}, function() {
+  this.append(div('a'));
+  return !this.a.element.onclick && !!this.a.element.onmouseover && !!this.a.element.onmouseout;
+});
+
 bind('x');
 bind('y');
 bind('z');

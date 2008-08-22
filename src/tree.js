@@ -83,7 +83,7 @@ var Container = Class.create({
       c = this.components[name];
       if (c.run)
         c.run();
-      c.registerEventListeners();
+      c.createListeners();
     }
   },
     
