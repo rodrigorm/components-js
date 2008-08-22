@@ -131,7 +131,7 @@ var Component = Class.create({
         if (event.preventDefault)
           event.preventDefault();
         else
-          event.cancelBubble = true;
+          event.returnValue = false;
     };
   },
   

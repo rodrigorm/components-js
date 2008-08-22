@@ -276,7 +276,7 @@ var Container = Class.create({
     for (var name in this.components) {
       c = this.components[name];
       
-      if (!c[name] || (c[name].nodeType == 1) || c[name].registerEventListeners) {
+      if (!c[id] || (c[id].nodeType == 1) || c[id].registerEventListeners) {
         c[id] = object;
         this.objects[id] = object;
       }

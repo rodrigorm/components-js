@@ -128,7 +128,7 @@ assert('append a component that is already the last component but not the last n
   return this.x.element.lastChild == this.x.s.next().element && this.collect('s') == 'one,two';
 });
 
-assert('names used by Component are ignored when setting element/component properties', function() {
+assert('names used by Component are ignored when creating properties', function() {
   this.append(x(div('remove') + div('container a')));
   return (typeof this.x.remove == 'function') && (this.x.a != this.x.container);
 });
@@ -230,7 +230,8 @@ assert('cannot overwrite sub-components by setting text', function() {
   this.append(x(y() + z()));
   this.x.foo = this.x.element;
   this.x.update({ foo: 'bar' });
-  return this.x.getHTML() == y() + z();
+
+  return this.x.z.element.parentNode == this.x.element;
 });
 
 assert('each() is safe for iterations during which sub containers are removed', function() {
@@ -292,19 +293,6 @@ assert('appropriately named methods are automatically registered as event listen
   }))(load(x()));
   
   return !component.matches.x.click && (component.matches.x.mouseover == 'onMouseOverX') && !component.matches.y
-});
-
-assert('listeners are registered after a component or element property is set', function() {
-  
-  var component = new (Component.extend({    
-    onClickY: function() {}
-  }))(load(x()));
-  
-  return !component.listeners.y && 
-       !!(component.set('y', this)) && 
-       !!component.listeners.y.click &&
-       !(component.unset('y')) &&
-        !component.listeners.y.click;
 });
 
 assert('flags are unique names prepended to the class name', function() {
