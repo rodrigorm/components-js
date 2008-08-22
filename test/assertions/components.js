@@ -286,19 +286,6 @@ assert('handle an element with insertion', function() {
   return this.x.y.z.y.x == this.x;
 });
 
-assert('appropriately named methods are automatically registered as event listeners', function() {
-  
-  var component = new (Component.extend({
-    
-    onclickx:      false,
-    onMouseOverX:  function() {},
-    _onMouseOverY: function() {}
-    
-  }))(load(x()));
-  
-  return !component.matches.x.click && (component.matches.x.mouseover == 'onMouseOverX') && !component.matches.y
-});
-
 assert('flags are unique names prepended to the class name', function() {
   this.insert(x());
 
@@ -358,6 +345,32 @@ assert('replace a container tag', function() {
   return this.x.element.tagName == 'P' && this.x.collect('s') == 'a,b,c';
 });
 
+assert('match listeners', function() {
+  
+  var component = new (Component.extend({
+    
+    onclickx:      false,
+    onMouseOverX:  function() {},
+    _onMouseOverY: function() {}
+    
+  }))(load(x()));
+  
+  return !component.matches.x.click && (component.matches.x.mouseover == 'onMouseOverX') && !component.matches.y
+});
+
+assert('create listeners for default properties (elements and components)', {
+  
+  a: {
+    onClick:    function() {},
+    onClickX:   function() {},
+    onClickFoo: function() {}
+  },
+  
+}, function() {
+  this.append(div('a', x() + div('foo') + x()));
+  return !!this.a.element.onclick && !!this.a.x.element.onclick && !!this.a.foo.onclick;
+});
+
 assert('create listeners for properties created during run', {
   
   a: {
@@ -367,13 +380,21 @@ assert('create listeners for properties created during run', {
     },
     
     onMouseOverFoo: function() {},
-
-    onMouseOutBar: function() {}
+    onMouseOutBar:  function() {}
   }
   
 }, function() {
   this.append(div('a'));
   return !this.a.element.onclick && !!this.a.element.onmouseover && !!this.a.element.onmouseout;
+});
+
+assert('fire all listeners in sequence', {
+  a: { onClick: function() { this.update(this.getHTML() + 'a') } },
+  b: { onClick: function() { this.update(this.getHTML() + 'b') } },
+  c: { onClick: function() { this.update(this.getHTML() + 'c') } }
+}, function() {
+  this.append(div('a b c')).element.onclick();
+  return this.a.getHTML() == 'abc';
 });
 
 bind('x');
