@@ -9,7 +9,7 @@ bind('tests', {
       if (!this.failed)
         new Assertion(this, assertions[i][0], assertions[i][1], assertions[i][2], assertions[i][3]).run();
   },
-  
+    
   notify: function(assertion) {
     if (this.failed)
       return;

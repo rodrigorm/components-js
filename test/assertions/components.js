@@ -26,13 +26,6 @@ assert('cannot remove an id', function() {
   return this.y.element.className == 'y' && this.x.element == this.y.element;
 });
 
-assert('add class name', function() {
-  this.append('<span id="x" class="y">...</span>');
-  this.x.apply('z');
-
-  return this.x.element.className == 'z y';
-});
-
 assert('handle duplicate class names and extraneous whitespace', function() {
   this.append(div(' x x y '));
   return this.x.container.names == 'x,y' && this.collect('x').length == 1;
@@ -135,17 +128,9 @@ assert('append a component that is already the last component but not the last n
   return this.x.element.lastChild == this.x.s.next().element && this.collect('s') == 'one,two';
 });
 
-assert('names used by Component are ignored when setting element/component properties', function() {
-  this.append(x());
-
-  var component = load(y());
-
-  this.x.set('name',      component);
-  this.x.set('container', component);
-  this.x.set('remove',    component);
-  this.x.set('z',         component);
-  
-  return this.x.name == 'x' && this.x.container.container == this.container && typeof this.x.remove == 'function' && this.x.z == component;
+assert('names used by Component are ignored when creating properties', function() {
+  this.append(x(div('remove') + div('container a')));
+  return (typeof this.x.remove == 'function') && (this.x.a != this.x.container);
 });
 
 assert('update containers after a removal', function() {
@@ -239,7 +224,19 @@ assert('update text for container elements', function() {
   this.x.update({ b: 'One!', c: 'Two!' });
 
   return this.x.b.innerHTML == 'One!' && this.x.c.innerHTML == 'Two!';
-}),
+});
+
+assert('update with an empty string creates an empty text node', function() {
+  return this.update('').nodeType == 3 && !!this.element.firstChild;
+});
+
+assert('cannot overwrite sub-components by setting text', function() {
+  this.append(x(y() + z()));
+  this.x.foo = this.x.element;
+  this.x.update({ foo: 'bar' });
+
+  return this.x.z.element.parentNode == this.x.element;
+});
 
 assert('each() is safe for iterations during which sub containers are removed', function() {
   this.append(s('one'));
@@ -302,19 +299,6 @@ assert('appropriately named methods are automatically registered as event listen
   return !component.matches.x.click && (component.matches.x.mouseover == 'onMouseOverX') && !component.matches.y
 });
 
-assert('listeners are registered after a component or element property is set', function() {
-  
-  var component = new (Component.extend({    
-    onClickY: function() {}
-  }))(load(x()));
-  
-  return !component.listeners.y && 
-       !!(component.set('y', this)) && 
-       !!component.listeners.y.click &&
-       !(component.unset('y')) &&
-        !component.listeners.y.click;
-});
-
 assert('flags are unique names prepended to the class name', function() {
   this.insert(x());
 
@@ -367,6 +351,29 @@ assert('if a component is a selecting another component, and it itself is select
   this.select();
 
   return !this.selected && this.x.selected == this.x.y;
+});
+
+assert('replace a container tag', function() {
+  this.append(x(s('a') + y(s('b')) + s('c'))).setTag('p');
+  return this.x.element.tagName == 'P' && this.x.collect('s') == 'a,b,c';
+});
+
+assert('create listeners for properties created during run', {
+  
+  a: {
+    run: function() {
+      this.foo = this.element;
+      this.bar = this.element;
+    },
+    
+    onMouseOverFoo: function() {},
+
+    onMouseOutBar: function() {}
+  }
+  
+}, function() {
+  this.append(div('a'));
+  return !this.a.element.onclick && !!this.a.element.onmouseover && !!this.a.element.onmouseout;
 });
 
 bind('x');

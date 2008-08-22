@@ -2,31 +2,22 @@ var Component = Class.create({
   
   initialize: function(container, name) {
     this.container = container;
+    this.element   = container.element;
+    this.document  = container.element.ownerDocument || document;
+    this.window    = window;
     this.name      = name;
-    this.listeners = {};
     this.processes = {};
     
-    this.set('window',   window);
-    this.set('document', container.element.ownerDocument || document);
-    this.set('element',  container.element);
+    if (!container.container && container.element.parentNode)
+      window[name] = window[name] || this;
   },
-  
-  run: function() {},
     
   prev: function(horizontal) {
-    var component;
-    
-    if (component = this.container.getPrev(this.name))
-      if (!horizontal || (component.container.container == this.container.container))
-        return component;
+    return this.container.seek(this.name, 'prev', horizontal);
   },
   
   next: function(horizontal) {
-    var component;
-    
-    if (component = this.container.getNext(this.name))
-      if (!horizontal || (component.container.container == this.container.container))
-        return component;
+    return this.container.seek(this.name, 'next', horizontal);
   },
 
   each: function(name, iterator) {
@@ -47,28 +38,7 @@ var Component = Class.create({
           this[callback](tree.i.components[name]);
     }
   },
-  
-  set: function(name, object) {
-    if (this[name] && !(this[name].nodeType == 1 || this[name].name))
-      return false;
-    
-    this[name] = object;
-    
-    for (var event in (this.matches[name] || {}))
-      this.registerAsListener(event, name, this.matches[name][event]);
-    
-    return object;
-  },
-  
-  unset: function(name) {
-    if (this[name]) {
-      for (var event in (this.matches[name] || {}))
-        this.unregisterListener(event, name, this.matches[name][event]);
       
-      delete(this[name]);
-    }
-  },
-    
   request: function(method, url, parameters) {
     new Request(this, method, url, parameters).send();
   },
@@ -92,7 +62,7 @@ var Component = Class.create({
   clone: function(deep) {
     return new Tree(this.element.cloneNode(deep)).i.components[this.name];
   },
-
+  
   apply: function(name) {
     if (arguments.length == 1) {
       this.container.addName(name)
@@ -121,17 +91,50 @@ var Component = Class.create({
       if (this.selected.selected === true)
         this.selected.selected = false;
 
-      this.selected.container.removeName('selected');
+      if (this.selected.container)
+        this.selected.container.removeName('selected');
     }
     
     if (this.selected = component) {
-      component.container.addName('selected');
+      if (component.container)
+        component.container.addName('selected');
       
       if (!component.selected)
         component.selected = true;
     }
+    return component;
   },
-      
+    
+  createListeners: function() {
+    var element, attr;
+    
+    for (var target in this.matches)
+      if (this[target]) {
+        element = this[target].element || this[target];
+        
+        for (var event in this.matches[target])
+          element[attr = 'on' + event] = this.createListener(this.matches[target][event], target, element[attr]);
+          
+      }
+  },
+  
+  createListener: function(id, target, tail) {
+    var component = this;
+
+    return function(event) {
+      event = event || window.event;
+
+      if (tail)
+        tail(event);
+
+      if (component[target] && (component[id](event) === false))
+        if (event.preventDefault)
+          event.preventDefault();
+        else
+          event.returnValue = false;
+    };
+  },
+  
   getHTML:   function() { return this.element.innerHTML },  
   getWidth:  function() { return this.element.offsetWidth },
   getHeight: function() { return this.element.offsetHeight },
@@ -146,61 +149,6 @@ var Component = Class.create({
     return point;
   },
   
-  registerAsListener: function(event, name, method) {
-    this.listeners = this.listeners || {};
-    
-    var target = this[name].element || this[name], listener = this.createListener(method);
-    
-    this.listeners[name]        = this.listeners[name] || {};
-    this.listeners[name][event] = listener;
-
-    if (target.addEventListener)
-      target.addEventListener(event, listener, false);
-    else if (target.attachEvent)
-      target.attachEvent('on' + event, listener);
-  },
-
-  unregisterListener: function(event, name) {
-    var target = this[name].element || this[name], listener = this.listeners[name][event];
-    
-    delete(this.listeners[name][event]);
-    
-    if (target.removeEventListener)
-      target.removeEventListener(event, listener, false);
-    else if (target.detachEvent)
-      target.detachEvent('on' + event, listener);
-  },
-
-  unregisterListeners: function() {
-    for (var name in this.listeners)
-      for (var event in this.listeners[name])
-        this.unregisterListener(event, name);
-  },
-
-  createListener: function(method) {
-    var component = this, listener = function(event) {
-      event = event || window.event;
-      
-      if (component[method](event) === false) {
-        if (event.preventDefault)
-          event.preventDefault();
-        else
-          event.returnValue = false;
-      }
-    };
-
-    if (Component.errors)
-      return function(event) {          
-        try {
-          listener(event);
-        } catch (error) {
-          Component.errors.alert(component.name + '#' + method + ': ' + (error.message || error.toString()) );
-        }
-      }
-    else
-      return listener;
-  },
-
   toString: function() {
     return this.element.id || this.container.toString();
   }
@@ -219,40 +167,35 @@ extend(Component, {
   },
   
   matchListeners: function(source) {
-    var element, event, matches, listeners = {};
+    var element, event, parts, matches = {};
 
     for (var id in source) {
       if (typeof source[id] == 'function') {
-        if (matches = id.match(this.Listener)) {
-          event   = matches[1].toLowerCase();
-          element = matches[2].uncapitalize();
-          
-          element = element || 'element';
+        if (parts = id.match(this.Listener)) {
+          event  = parts[1].toLowerCase();
+          target = parts[2].uncapitalize() || 'element';
 
-          listeners[element]        = listeners[element] || {};
-          listeners[element][event] = id;
+          
+          matches[target]        = matches[target] || {};
+          matches[target][event] = id;
         }
       }
     }
-    return listeners
+    return matches;
   },
 
   delegate: function(method) {
-    this.prototype[method] = function() {
-      return this.container[method].apply(this.container, arguments);
-    }
+    if (arguments.length > 1)
+      for (var i = 0; i < arguments.length; i++)
+        this.delegate(arguments[i]);
+    else
+      this.prototype[method] = function() {
+        return this.container[method].apply(this.container, arguments);
+      }
   }
 });
 
-Component.delegate('insert');
-Component.delegate('append');
-Component.delegate('collect');
-Component.delegate('remove');
-Component.delegate('update');
-Component.delegate('first');
-Component.delegate('last');
-Component.delegate('fade');
-Component.delegate('appear');
+Component.delegate('update', 'insert', 'append', 'collect', 'remove', 'setTag', 'first', 'last', 'fade', 'appear');
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substring(1);

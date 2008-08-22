@@ -3,7 +3,6 @@ var Tree = Class.create({
   initialize: function(element, container) {
     this.load(element, container);
     this.invoke('run');
-    this.registerUnload();
   },
   
   load: function(element, parent) {
@@ -64,13 +63,6 @@ var Tree = Class.create({
       do
         container[method]();
       while ((container = container.next) && (container != this.j.next));    
-  },
-    
-  registerUnload: function() {
-    if (window.attachEvent) {
-      var tree = this; 
-      window.attachEvent('onunload', function() { tree.invoke('unregisterListeners') });
-    }
   }
 });
 
@@ -86,32 +78,47 @@ var Container = Class.create({
   },
     
   run: function() {
-    for (var name in this.components)
-      this.components[name].run();
+    var c;
+    for (var name in this.components) {
+      c = this.components[name];
+      if (c.run)
+        c.run();
+      c.createListeners();
+    }
   },
     
   update: function(object) {
-    return typeof object == 'string' ? this.updateText(object) : this.updateElements(object);
-  },
-  
-  updateText: function(data) {
-    this.each(function() {
-      this.move();
-    });
-    
-    if (this.element.childNodes.length == 1 && this.element.firstChild.nodeType == 3) {
-      this.element.firstChild.data = data;
+    if (typeof object == 'string') {
+      this.empty();
+      return this.element.appendChild(this.document.createTextNode(object));
     } else {
-      this.element.innerHTML = '';
-      this.element.appendChild(this.document.createTextNode(data));      
+      for (var name in object)
+        if (this.objects[name])
+          if (this.objects[name].nodeType == 1)
+            this.objects[name].innerHTML = object[name];
     }
-    return this.element.firstChild;
   },
   
-  updateElements: function(object) {
-    for (var id in object)
-      if (this.objects[id] && this.objects[id].nodeType == 1)
-        this.objects[id].innerHTML = object[id];
+  empty: function() {
+    this.each(function() { this.move() });
+    this.element.innerHTML = '';
+  },
+    
+  setTag: function(name) {
+    var element = this.document.createElement(name);
+    
+    while (this.element.firstChild)
+      element.appendChild(this.element.firstChild);
+    
+    this.element.parentNode.replaceChild(element, this.element);
+    
+    return this.setElement(element);
+  },
+  
+  setElement: function(element) {
+    for (var name in this.components)
+      this.components[name].element = element;
+    return this.element = element;
   },
   
   append: function(component, duration) {
@@ -161,7 +168,7 @@ var Container = Class.create({
           this.container.unset(name);
           
           // If there is a later child with this name, move pointer to that:
-          var c = this.getNext(name);
+          var c = this.seek(name, 'next');
           
           while (c && this.contains(c))
             c = c.next()
@@ -267,21 +274,23 @@ var Container = Class.create({
       this.element.style.opacity = k;
   },
 
-  set: function(id, object) {    
-    for (var name in this.components)
-      this.components[name].set(id, object);
+  set: function(id, object) {
+    var c;
     
-    return this.objects[id] = object;
+    for (var name in this.components) {
+      c = this.components[name];
+      
+      if (!c[id] || (c[id].nodeType == 1) || c[id].registerEventListeners) {
+        c[id] = object;
+        this.objects[id] = object;
+      }
+    }
+    this.objects[id];
   },
   
-  unregisterListeners: function() {
-    for (var name in this.components)
-      this.components[name].unregisterListeners();
-  },
-
   unset: function(id) {
     for (var name in this.components)
-      this.components[name].unset(id);
+      delete(this.components[name][id]);
 
     delete(this.objects[id]);
   },
@@ -293,13 +302,6 @@ var Container = Class.create({
         list.push(this.components[name]);
     });
     return list;
-    // var components = [], containers = this.getChildren();
-    //   
-    // for (var i = 0; i < containers.length; i++)
-    //   if (containers[i].components[name])
-    //     components.push(containers[i].components[name]);
-    //   
-    // return components;
   },
  
   each: function(iterator) {
@@ -317,9 +319,6 @@ var Container = Class.create({
         c = prev.next;
       }
     }
-    // var result, c = this;
-    // while ((c = c.next) && this.contains(c) && !(result = iterator.apply(c)));
-    // return result;
   },
   
   contains: function(child) {
@@ -344,22 +343,12 @@ var Container = Class.create({
     });
     return component;
   },
-  
-  getPrev: function(name) {
-    var component, container = this.prev;
     
-    while (container && !(component = container.components[name]))
-      container = container.prev;
-      
-    return component;
-  },
-  
-  getNext: function(name) {
-    var component, container = this.next;
-
-    while (container && !(component = container.components[name]))
-      container = container.next;
-      
+  seek: function(name, id, horizontal) {
+    var component, c = this;    
+    do
+      c = c[id];
+    while (c && (!horizontal || c.container == this.container) && !(component = c.components[name]));
     return component;
   },
   
