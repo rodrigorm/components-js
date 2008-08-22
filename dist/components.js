@@ -166,7 +166,7 @@ var Component = Class.create({
         if (event.preventDefault)
           event.preventDefault();
         else
-          event.cancelBubble = true;
+          event.returnValue = false;
     };
   },
   
@@ -331,15 +331,19 @@ var Container = Class.create({
     
   update: function(object) {
     if (typeof object == 'string') {
-      this.each(function() { this.move() });
-      this.element.innerHTML = object;
-      return this.element.firstChild;
+      this.empty();
+      return this.element.appendChild(this.document.createTextNode(object));
     } else {
       for (var name in object)
         if (this.objects[name])
           if (this.objects[name].nodeType == 1)
             this.objects[name].innerHTML = object[name];
     }
+  },
+  
+  empty: function() {
+    this.each(function() { this.move() });
+    this.element.innerHTML = '';
   },
     
   setTag: function(name) {
@@ -518,7 +522,7 @@ var Container = Class.create({
     for (var name in this.components) {
       c = this.components[name];
       
-      if (!c[name] || (c[name].nodeType == 1) || c[name].registerEventListeners) {
+      if (!c[id] || (c[id].nodeType == 1) || c[id].registerEventListeners) {
         c[id] = object;
         this.objects[id] = object;
       }

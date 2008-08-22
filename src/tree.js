@@ -89,15 +89,19 @@ var Container = Class.create({
     
   update: function(object) {
     if (typeof object == 'string') {
-      this.each(function() { this.move() });
-      this.element.innerHTML = object;
-      return this.element.firstChild;
+      this.empty();
+      return this.element.appendChild(this.document.createTextNode(object));
     } else {
       for (var name in object)
         if (this.objects[name])
           if (this.objects[name].nodeType == 1)
             this.objects[name].innerHTML = object[name];
     }
+  },
+  
+  empty: function() {
+    this.each(function() { this.move() });
+    this.element.innerHTML = '';
   },
     
   setTag: function(name) {

@@ -224,7 +224,11 @@ assert('update text for container elements', function() {
   this.x.update({ b: 'One!', c: 'Two!' });
 
   return this.x.b.innerHTML == 'One!' && this.x.c.innerHTML == 'Two!';
-}),
+});
+
+assert('update with an empty string creates an empty text node', function() {
+  return this.update('').nodeType == 3 && !!this.element.firstChild;
+});
 
 assert('cannot overwrite sub-components by setting text', function() {
   this.append(x(y() + z()));
