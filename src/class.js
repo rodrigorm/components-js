@@ -6,7 +6,8 @@ var Class = {
         this.initialize.apply(this, arguments);
     };
 
-    extend(klass.prototype, source || {});
+    if (source)
+      extend(klass.prototype, source);
 
     return klass;
   }

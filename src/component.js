@@ -7,9 +7,6 @@ var Component = Class.create({
     this.window    = window;
     this.name      = name;
     this.processes = {};
-    
-    if (!container.container && container.element.parentNode)
-      window[name] = window[name] || this;
   },
     
   prev: function(horizontal) {
