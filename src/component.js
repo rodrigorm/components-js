@@ -46,7 +46,10 @@ var Component = Class.create({
       
     var component = this;
     
-    this.processes[name] = this.processes[name] || setInterval(function() { component[name]() }, period);
+    this.processes[name] = this.processes[name] || setInterval(function() {
+      if (component[name]() === false)
+        component.stop(name);
+    }, period);
   },
   
   stop: function(name) {
@@ -192,7 +195,7 @@ extend(Component, {
   }
 });
 
-Component.delegate('update', 'insert', 'append', 'collect', 'remove', 'setTag', 'first', 'last', 'fade', 'appear');
+Component.delegate('update', 'insert', 'append', 'empty', 'collect', 'remove', 'setTag', 'first', 'last', 'fade', 'appear');
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substring(1);

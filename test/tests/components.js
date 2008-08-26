@@ -1,24 +1,24 @@
-assert('we can build elements from HTML', function() {
+test('we can build elements from HTML', function() {
   return build('<p></p>').tagName == 'P';
 });
 
-assert('we can build orphaned table and list elements from HTML', function() {
+test('we can build orphaned table and list elements from HTML', function() {
   return build('<td></td>').tagName == 'TD' &&
          build('<tr></tr>').tagName == 'TR' &&
          build('<li></li>').tagName == 'LI';
 });
 
-assert('loading HTML initializes defined components', function() {
+test('loading HTML initializes defined components', function() {
   return load('<div id="x"></div>').element.tagName == 'DIV';
 });
 
-assert('a component is identified by either a class name or an id', function() {
+test('a component is identified by either a class name or an id', function() {
   this.append('<span id="x">..</span>');
   this.append('<span class="x">..</span>');
   return this.collect('x').length == 2;
 });
 
-assert('cannot remove an id', function() {
+test('cannot remove an id', function() {
   this.append('<span id="x" class="y z">...</span>');
   this.y.container.removeName('z');
   this.y.container.removeName('x');
@@ -26,18 +26,18 @@ assert('cannot remove an id', function() {
   return this.y.element.className == 'y' && this.x.element == this.y.element;
 });
 
-assert('handle duplicate class names and extraneous whitespace', function() {
+test('handle duplicate class names and extraneous whitespace', function() {
   this.append(div(' x x y '));
   return this.x.container.names == 'x,y' && this.collect('x').length == 1;
 });
 
-assert('a component has access to containing components', function() {
-  return this.insert(x(y(z()))).y.z.y.x.contents == this;
+test('a component has access to containing components', function() {
+  return this.insert(x(y(z()))).y.z.y.x == this.x;
 });
 
-assert('a component has access to the first instance of a sub-component', function() {
-  this.insert(x(s('a') + s('b')));
-  this.insert(s('c'));
+test('a component has access to the first instance of a sub-component', function() {
+  this.append(x(s('a') + s('b')));
+  this.append(s('c'));
 
   return this.x.s == 'a' &&
          this.s   == 'c' &&
@@ -45,7 +45,7 @@ assert('a component has access to the first instance of a sub-component', functi
          this.x.collect('s') == 'a,b';
 });
 
-assert('precedence is given to the subtree over containers when assigning properties', {
+test('precedence is given to the subtree over containers when assigning properties', {
   
   list: {},
   item: {}
@@ -55,7 +55,7 @@ assert('precedence is given to the subtree over containers when assigning proper
   return this.list.item.list != this.list;
 });
 
-assert('properties are updated after removing a child component', function() {
+test('properties are updated after removing a child component', function() {
   this.append(s('one'));
   this.append(s('two'));
 
@@ -64,7 +64,7 @@ assert('properties are updated after removing a child component', function() {
   return this.s == 'two';
 });
 
-assert('properties are updated after inserting a component', function() {
+test('properties are updated after inserting a component', function() {
   this.append(s('two'));
   this._s = this.s;
   this.insert(s('one'), this.s);
@@ -72,26 +72,26 @@ assert('properties are updated after inserting a component', function() {
   return this._s == 'two' && this.s == 'one';
 });
 
-assert('we can access the first and last descendent component of a given type', function() {
+test('we can access the first and last descendent component of a given type', function() {
   this.append(x(y(s('one')) + y(z(s('two')))));
   return this.first('s') == 'one' && this.last('s') == 'two';
 });
 
-assert('inserting a component in the same position leaves the tree unchanged (using first child)', function() {
+test('inserting a component in the same position leaves the tree unchanged (using first child)', function() {
   this.append(s('one'));
   this.append(s('two'));
   this.insert(this.s, this.s.next());
   return this.collect('s') == 'one,two';
 });
 
-assert('inserting a component in the same position leaves the tree unchanged (using last child)', function() {
+test('inserting a component in the same position leaves the tree unchanged (using last child)', function() {
   this.append(s('one'));
   this.append(s('two'));
   this.append(this.s.next());
   return this.collect('s') == 'one,two';
 });
 
-assert('remove all child instances of a component', function() {
+test('remove all child instances of a component', function() {
   var i = 0;
   
   this.append(x(x(x())));
@@ -106,7 +106,7 @@ assert('remove all child instances of a component', function() {
   return !this.x && i == 3 && this.collect('x').length == 0;
 });
 
-assert('remove all sub instances of a component', function() {
+test('remove all sub instances of a component', function() {
   var i = 0;
   
   this.append(x(x(x())));
@@ -120,7 +120,7 @@ assert('remove all sub instances of a component', function() {
   return !this.x && i == 4 && this.collect('x').length == 0;
 });
 
-assert('append a component that is already the last component but not the last node', function() {
+test('append a component that is already the last component but not the last node', function() {
   this.append(div('x', s('one') + s('two') + div('foo')));
 
   this.x.append(this.x.s.next());
@@ -128,19 +128,19 @@ assert('append a component that is already the last component but not the last n
   return this.x.element.lastChild == this.x.s.next().element && this.collect('s') == 'one,two';
 });
 
-assert('names used by Component are ignored when creating properties', function() {
+test('names used by Component are ignored when creating properties', function() {
   this.append(x(div('remove') + div('container a')));
   return (typeof this.x.remove == 'function') && (this.x.a != this.x.container);
 });
 
-assert('update containers after a removal', function() {
+test('update containers after a removal', function() {
   this.append(x(y(z())));      
   this.append(this.x.y);
 
-  return this.y.z && this.y.contents && !this.y.x;
+  return this.y.z && this.y.container.container && !this.y.x;
 });
 
-assert('components are accessible as lists', function() {
+test('components are accessible as lists', function() {
   this.append(s('one'));
   this.append(s('two'));
   this.append(s('three'));
@@ -151,7 +151,7 @@ assert('components are accessible as lists', function() {
          this.s.next().next().prev() == 'two';
 });
 
-assert('lists are updated after inserting a new component', function() {
+test('lists are updated after inserting a new component', function() {
   this.append(s('one'));
   this.append(x());
   this.x.append(s('two'))
@@ -160,7 +160,7 @@ assert('lists are updated after inserting a new component', function() {
   return this.collect('s') == 'one,two,three';
 });
 
-assert('the whole tree is accessible when a component run', {
+test('the whole tree is accessible when a component run', {
   collection: {
     
     run: function() {
@@ -184,7 +184,7 @@ assert('the whole tree is accessible when a component run', {
   return this.collection.passed && this.collection.item.passed && this.collection.last('item').passed;
 });
 
-assert('every component is run exactly once', {
+test('every component is run exactly once', {
   a: {
     run: function() {
       this.count = (this.count || 0) + 1;
@@ -199,7 +199,7 @@ assert('every component is run exactly once', {
   return !this.each('a', function() { return this.count != 1 });
 });
 
-assert('inserting a component moves the component in the tree', function() {
+test('inserting a component moves the component in the tree', function() {
   this.append(x());
   this.append(y());
   this.x.insert(this.y)
@@ -207,11 +207,11 @@ assert('inserting a component moves the component in the tree', function() {
   return !!this.x.y.x;
 });
        
-assert('inserting markup returns the first newly created root component', function() {
-  return this.append(x(y('...'))).y.x.contents == this;
+test('inserting markup returns the first newly created root component', function() {
+  return this.append(x(y('...'))).y.x;
 });
 
-assert('replace container content with text', function() {
+test('replace container content with text', function() {
   this.append(x());
   
   return this.update('abc').data == 'abc' &&
@@ -219,18 +219,18 @@ assert('replace container content with text', function() {
          this.getHTML() == 'abc';
 });
 
-assert('update text for container elements', function() {
+test('update text for container elements', function() {
   this.append(x('<span class="a"><span class="b">One</span><span class="c">Two</span></span>'));
   this.x.update({ b: 'One!', c: 'Two!' });
 
   return this.x.b.innerHTML == 'One!' && this.x.c.innerHTML == 'Two!';
 });
 
-assert('update with an empty string creates an empty text node', function() {
+test('update with an empty string creates an empty text node', function() {
   return this.update('').nodeType == 3 && !!this.element.firstChild;
 });
 
-assert('cannot overwrite sub-components by setting text', function() {
+test('cannot overwrite sub-components by setting text', function() {
   this.append(x(y() + z()));
   this.x.foo = this.x.element;
   this.x.update({ foo: 'bar' });
@@ -238,7 +238,7 @@ assert('cannot overwrite sub-components by setting text', function() {
   return this.x.z.element.parentNode == this.x.element;
 });
 
-assert('each() is safe for iterations during which sub containers are removed', function() {
+test('each() is safe for iterations during which sub containers are removed', function() {
   this.append(s('one'));
   this.append(s('two'));
   this.append(s('three'));
@@ -250,7 +250,7 @@ assert('each() is safe for iterations during which sub containers are removed', 
   return this.collect('s').length == 0;
 });
 
-assert('handle elements by running callbacks for any top-level components', function() {
+test('handle elements by running callbacks for any top-level components', function() {
   var handledX = false, handledY = false, handledZ = false;
   
   this.insert(x());
@@ -264,21 +264,21 @@ assert('handle elements by running callbacks for any top-level components', func
   return !handledX && handledY && handledZ;
 });
 
-assert('clone(false) returns a copy of the container element', function() {
+test('clone(false) returns a copy of the container element', function() {
   this.append(x(y()));
   this.append(z());
   this.z.append(this.x.clone(false));
   return this.collect('x').length == 2 && this.collect('y').length == 1;
 });
 
-assert('clone(tree) return a copy of the entire tree', function() {
+test('clone(tree) return a copy of the entire tree', function() {
   this.append(x(y(s('Yip'))));
   this.append(z());
   this.z.append(this.x.clone(true));
   return this.z.x.y.s == 'Yip';
 });
 
-assert('handle an element with insertion', function() {
+test('handle an element with insertion', function() {
   this.insert(x());
   this.x.addY = function(y) { this.append(y) };
   this.x.add(build(y(z())));
@@ -286,7 +286,7 @@ assert('handle an element with insertion', function() {
   return this.x.y.z.y.x == this.x;
 });
 
-assert('flags are unique names prepended to the class name', function() {
+test('flags are unique names prepended to the class name', function() {
   this.insert(x());
 
   this.x.apply('a');
@@ -299,7 +299,7 @@ assert('flags are unique names prepended to the class name', function() {
   return (this.x.element.className == 'b a x') && this.x.a && this.x.b && !this.x.c;
 });
   
-assert('a component can only select one other component at a time', function() {
+test('a component can only select one other component at a time', function() {
   this.append(x());
   this.x.append(y());
   this.x.append(z());
@@ -309,21 +309,21 @@ assert('a component can only select one other component at a time', function() {
   return (this.selected == this.x.z) && !!this.x.z.selected && !this.x.y.selected;
 });
 
-// assert('set flag for initially-selected component', function() {
+// test('set flag for initially-selected component', function() {
 //   this.insert(x(div('s', 'one') + div('selected s', 'two') + div('s', 'three')));
 //   
 //   return this.x.s.next().selected === true;
 //   return this.x.selected == this.x.s.next();
 // });
 
-assert('apply should overwrite the named property if it already exists', function() {
+test('apply should overwrite the named property if it already exists', function() {
   this.append(x());
   this.x.i = 2;
   this.x.apply('i');
   return this.x.element.className == 'i x' && this.x.i === true;
 });
 
-assert('clear should remove a class name even if the named property is not a boolean, and overwrite it', function() {
+test('clear should remove a class name even if the named property is not a boolean, and overwrite it', function() {
   this.append(x());
   this.x.apply('p');
   this.x.p = 2;
@@ -331,7 +331,7 @@ assert('clear should remove a class name even if the named property is not a boo
   return this.x.element.className == 'x' && this.x.p === false;
 });
 
-assert('if a component is a selecting another component, and it itself is selected by a component, this.selected accesses the other component rather than being a flag', function() {
+test('if a component is a selecting another component, and it itself is selected by a component, this.selected accesses the other component rather than being a flag', function() {
   this.append(x(y()));
   this.x.select(this.x.y);
   this.select(this.x);
@@ -340,12 +340,12 @@ assert('if a component is a selecting another component, and it itself is select
   return !this.selected && this.x.selected == this.x.y;
 });
 
-assert('replace a container tag', function() {
+test('replace a container tag', function() {
   this.append(x(s('a') + y(s('b')) + s('c'))).setTag('p');
   return this.x.element.tagName == 'P' && this.x.collect('s') == 'a,b,c';
 });
 
-assert('match listeners', function() {
+test('match listeners', function() {
   
   var component = new (Component.extend({
     
@@ -358,7 +358,7 @@ assert('match listeners', function() {
   return !component.matches.x.click && (component.matches.x.mouseover == 'onMouseOverX') && !component.matches.y
 });
 
-assert('create listeners for default properties (elements and components)', {
+test('create listeners for default properties (elements and components)', {
   
   a: {
     onClick:    function() {},
@@ -366,12 +366,14 @@ assert('create listeners for default properties (elements and components)', {
     onClickFoo: function() {}
   },
   
+  x: {}
+  
 }, function() {
   this.append(div('a', x() + div('foo') + x()));
   return !!this.a.element.onclick && !!this.a.x.element.onclick && !!this.a.foo.onclick;
 });
 
-assert('create listeners for properties created during run', {
+test('create listeners for properties created during run', {
   
   a: {
     run: function() {
@@ -388,7 +390,7 @@ assert('create listeners for properties created during run', {
   return !this.a.element.onclick && !!this.a.element.onmouseover && !!this.a.element.onmouseout;
 });
 
-assert('fire all listeners in sequence', {
+test('fire all listeners in sequence', {
   a: { onClick: function() { this.update(this.getHTML() + 'a') } },
   b: { onClick: function() { this.update(this.getHTML() + 'b') } },
   c: { onClick: function() { this.update(this.getHTML() + 'c') } }
@@ -397,19 +399,20 @@ assert('fire all listeners in sequence', {
   return this.a.getHTML() == 'abc';
 });
 
+test('cannot insert non-component HTML', function() {
+  this.update(div('foo'));
+  return this.element.firstChild      == this.element.lastChild &&
+         this.element.firstChild.data == div('foo');
+});
+
 bind('x');
 bind('y');
 bind('z');
 bind('s', {
-  toString: function() {
-    return this.element.innerHTML;
-  }
+  toString: function() { return this.element.innerHTML }
 });
 
 function s(content) { return div('s', content) }
 function x(content) { return div('x', content) }
 function y(content) { return div('y', content) }
 function z(content) { return div('z', content) }
-function div(name, content) {
-  return '<div class="' + name + '">' + (content || '') + '</div>';
-}

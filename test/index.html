@@ -9,14 +9,15 @@
 <script type="text/javascript" src="../src/request.js" charset="utf-8"></script>
 <script type="text/javascript" src="../src/transition.js" charset="utf-8"></script>
 
-<script type="text/javascript" src="tests.js" charset="utf-8"></script>
+<script type="text/javascript" src="tag.js" charset="utf-8"></script>
+<script type="text/javascript" src="test.js" charset="utf-8"></script>
 
-<script type="text/javascript" src="assertions/components.js" charset="utf-8"></script>
-<script type="text/javascript" src="assertions/request.js" charset="utf-8"></script>
+<script type="text/javascript" src="tests/components.js" charset="utf-8"></script>
+<script type="text/javascript" src="tests/request.js" charset="utf-8"></script>
 
 <style type="text/css" media="screen">
 body {
-  font: normal 76% Arial, sans-serif;
+  font: normal 110% Arial, sans-serif;
   color: #222;
 }
 
@@ -28,17 +29,11 @@ h1 {
   font-size: 3.8em;
 }
 
-#summary {
-  font-size: 1.5em;
-}
-.waiting #summary {
-  color: #ccc;
-  font-style: italic;
-}
-.failed #summary {
+
+.failed {
   color: red;
 }
-.passed #summary {
+.passed {
   color: lime;
 }
 
@@ -46,6 +41,7 @@ h1 {
 
 </head>
 <body id="tests">
-  <p id="summary"></p>
+  <h2 id="heading"></h2>
+  <p id="message"></p>
 </body>
 </html>
