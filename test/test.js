@@ -30,16 +30,18 @@ bind('tests', {
         
         this.apply('failed');
         //this.update({ heading: 'Failed!', message: message });
-        this.update('Failed: ' + message);
+        this.update('Failed (' + i + '): ' + message);
       }
       
       bindings = _bindings;
     }
     
-    if (!this.failed) {
+    if (i == 0) {
+      this.update('No tests!');
+    } else if (!this.failed) {
       this.apply('passed');
       //this.update({ heading: 'Passed!', message: tests.length + ' tests' });
-      this.update('All ' + i + ' tests passed');
+      this.update('Passed! (' + i + '/' + i + ')');
     }
   }
 });

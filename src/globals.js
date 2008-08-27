@@ -17,22 +17,21 @@ function register(callback) {
     }, 10); 
   } else if ((/mozilla/.test(userAgent) && !/(compatible)/.test(userAgent)) || (/opera/.test(userAgent))) {
     document.addEventListener('DOMContentLoaded', callback, false);
-  } else if (document.uniqueID && document.expando) { // ie
-    // http://www.hedgerwow.com/360/dhtml/ie-dom-ondocumentready.html
-    var tempNode = document.createElement('document:ready'); 
+  } else if (document.uniqueID && document.expando) { // http://www.hedgerwow.com/360/dhtml/ie-dom-ondocumentready.html
+    var element = document.createElement('span'); 
     
     (function () { 
       if (document.loaded) return;
 
       try {
-        tempNode.doScroll('left');
+        element.doScroll('left');
         
         if (!document.body)
           throw new Error();
         
         document.loaded = true;
         callback();
-        tempNode = null; 
+        element = null; 
       } catch(e) {
         setTimeout(arguments.callee, 0); 
       } 
@@ -54,56 +53,34 @@ function load(object) {
 };
     
 function build(text) {
-  var node = buildFragment(text).firstChild;
+  var element, name = (text.match(/<(\w+)\/?[\s|>]/i) || [])[1];
 
-  do {
-    if (node.nodeType == 1)
-      return node.parentNode.removeChild(node);
-  } while (node = node.nextSibling);
-};
-  
-function buildFragment(text) {
-  var fragment = document.createDocumentFragment(), container = document.createElement('div');
+  if (name) {
+    name    = name.toLowerCase();
+    element = document.createElement('div');
+    text    = text.slice(text.indexOf('<'));
 
-  var containingTags = [];
-
-  var matches = text.match(/^\s*<(li|td|tr|tbody)/i);
-
-  if (matches)
-    containingTags = Tags.containersFor(matches[1].toLowerCase());
-
-  for (var i = 0; i < containingTags.length; i++) text = "<" + containingTags[i] + ">" + text + "</" + containingTags[i] + ">";
-  container.innerHTML = text;
-  for (var i = 0; i < containingTags.length; i++) container = container.firstChild;
-
-  for (var i = container.childNodes.length - 1; i > -1; i--) fragment.insertBefore(container.childNodes[i], fragment.firstChild);
-
-  if (!fragment.firstChild && text.length > 0)
-    fragment.appendChild(this.createTextNode(text));
-
-  return fragment;
-};
-
-
-var Tags = {
-  
-  containersFor: function(tag) {
-    tag = tag.toLowerCase();
-    
-    var containingTags = [], containingTag = Tags.containers[tag];
-    if (containingTag) {
-      containingTags = Tags.containersFor(containingTag);
-      containingTags.unshift(containingTag);
+    var depth = 1;
+    while (name = build.Tags[name]) {
+      text = tag(name, null, text);
+      depth++;
     }
-    return containingTags;
-  },
-  
-  containers: {
-    li:    'ul',
-    td:    'tr',
-    tr:    'tbody',
-    tbody: 'table'
-  }  
+    
+    element.innerHTML = text;
+
+    for (var i = 0; i < depth; i++)
+      element = element.firstChild;
+    
+    element.parentNode.removeChild(element);
+  }
+  return element;
+};
+
+build.Tags = {
+  li:    'ul',
+  td:    'tr',
+  tr:    'tbody',
+  tbody: 'table'
 };
 
 register(function() {

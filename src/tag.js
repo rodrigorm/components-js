@@ -7,5 +7,5 @@ function div(names, content) {
 }
 
 function tag(name, names, content) {
-  return '<' + name + ' class="' + names + '">' + (content || '') + '</' + name + '>';
+  return '<' + name + (names ? ' class="' + names + '"': '') + '>' + (content || '') + '</' + name + '>';
 }

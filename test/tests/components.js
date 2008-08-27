@@ -1,18 +1,39 @@
-test('we can build elements from HTML', function() {
-  return build('<p></p>').tagName == 'P';
+bind('x');
+bind('y');
+bind('z');
+bind('s', {
+  toString: function() { return this.element.innerHTML }
 });
 
-test('we can build orphaned table and list elements from HTML', function() {
+function x(content) { return div('x', content) }
+function y(content) { return div('y', content) }
+function z(content) { return div('z', content) }
+function s(content) { return div('s', content) }
+
+
+test('build non-contained elements', function() {
+  return build('<p></p>').tagName == 'P' && 
+         build('<P></P>').tagName == 'P' && 
+         build('<br/>  ').tagName == 'BR';
+});
+
+test('build orphaned table and list elements', function() {
   return build('<td></td>').tagName == 'TD' &&
          build('<tr></tr>').tagName == 'TR' &&
          build('<li></li>').tagName == 'LI';
 });
 
-test('loading HTML initializes defined components', function() {
-  return load('<div id="x"></div>').element.tagName == 'DIV';
+test('build the first tag, ignore subsequent top-level tags', function() {
+  return build('<em></em> <strong></strong>').tagName == 'EM' &&
+         build('<li></li> <strong></strong>').tagName == 'LI';
 });
 
-test('a component is identified by either a class name or an id', function() {
+test('load HTML to yield components', function() {
+  var component = load('<div id="x"></div>');
+  return component.name == 'x' && component.element.tagName == 'DIV';
+});
+
+test('yield components from both class names and ids', function() {
   this.append('<span id="x">..</span>');
   this.append('<span class="x">..</span>');
   return this.collect('x').length == 2;
@@ -399,20 +420,34 @@ test('fire all listeners in sequence', {
   return this.a.getHTML() == 'abc';
 });
 
-test('cannot insert non-component HTML', function() {
+test('update (container) element with text to create a text node only', function() {
   this.update(div('foo'));
+
   return this.element.firstChild      == this.element.lastChild &&
          this.element.firstChild.data == div('foo');
 });
 
-bind('x');
-bind('y');
-bind('z');
-bind('s', {
-  toString: function() { return this.element.innerHTML }
+test('update (control) element with HTML to create a text node only', function() {
+  this.append(x(div('foo'))).update({ foo: x() });
+
+  return this.x.foo.firstChild == this.x.foo.lastChild &&
+         this.x.foo.firstChild.data       == x();
 });
 
-function s(content) { return div('s', content) }
-function x(content) { return div('x', content) }
-function y(content) { return div('y', content) }
-function z(content) { return div('z', content) }
+// test('start and stop process', {
+//   
+//   x: {
+//     run: function() {
+//       this.i = 0;
+//     },
+//     
+//     inc: function() {
+//       if (++this.i == 5)
+//         return false;
+//     }
+//   }
+// },function() {
+//   this.append(x());
+//   this.x.start('inc', 1);
+//   return true;
+// });

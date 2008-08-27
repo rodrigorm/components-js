@@ -93,9 +93,10 @@ var Container = Class.create({
       return this.element.appendChild(this.document.createTextNode(object));
     } else {
       for (var name in object)
-        if (this.objects[name])
-          if (this.objects[name].nodeType == 1)
-            this.objects[name].innerHTML = object[name];
+        if (this.objects[name] && this.objects[name].nodeType == 1) {
+          this.objects[name].innerHTML = '';
+          this.objects[name].appendChild(this.document.createTextNode(object[name]));
+        }
     }
   },
   
