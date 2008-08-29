@@ -6,7 +6,6 @@ var Component = Class.create({
     this.document  = container.element.ownerDocument || document;
     this.window    = window;
     this.name      = name;
-    this.processes = {};
   },
     
   prev: function(horizontal) {
@@ -40,23 +39,63 @@ var Component = Class.create({
     new Request(this, method, url, parameters).send();
   },
   
-  start: function(name, period) {
-    if (!this[name])
-      throw new Error(this.name + '#' + name + ' is not defined');
-      
-    var component = this;
-    
-    this.processes[name] = this.processes[name] || setInterval(function() {
-      if (component[name]() === false)
-        component.stop(name);
-    }, period);
+  fade: function(remove) {
+    this.morphO(1, 0, function() {
+      if (remove) this.remove();
+    });
   },
   
-  stop: function(name) {
-    if (this.processes[name]) {
-      clearInterval(this.processes[name]);
-      this.processes[name] = null;
-    }
+  appear: function() {
+    this.morphO(0, 1);
+  },
+  
+  morphO: function(i, j, finalize) {
+    var s = this.element.style;
+    
+    // Trigger hasLayout in IE (fixes text rendering bug)
+    if (window.ActiveXObject)
+      s.width = this.element.offsetWidth + 'px';
+    
+    this.morph(i, j, function(k) {
+      s.display = k == 0 ? 'none' : '';
+        
+      if (window.ActiveXObject)
+        s.filter = 'alpha(opacity=' + (k * 100) + ')';
+      else
+        s.opacity = k;
+    }, function() {
+      if (finalize)
+        finalize.call(this);
+
+      s.display = s.opacity = s.filter = '';
+    });
+  },
+  
+  morph: function(i, j, iterator, finalize) {
+    var k = i;
+    
+    iterator.call(this, i);
+    
+    this.start(function() {
+      k += (i < j ? 1 : -1) * 0.05;
+      iterator.call(this, -1 * (Math.cos(Math.PI * k) - 1) / 2);
+      
+      if ((j > i && k >= j) || (j < i && k <= j)) {
+        if (finalize)
+          finalize.call(this);
+        return false;
+      }
+    }, 20);
+  },
+  
+  start: function(process, period) {
+    var component = this, id, callback = typeof process == 'string' ?
+      this[process] : process;
+    
+    id = setInterval(function() {
+      if (callback.apply(component) === false)
+        clearInterval(id);
+    }, period);
   },
 
   clone: function(deep) {
@@ -122,33 +161,24 @@ var Component = Class.create({
     var component = this;
 
     return function(event) {
+      var result = true;
+      
       event = event || window.event;
 
-      if (tail)
-        tail(event);
-
+      if ((tail && tail(event) === false))
+        result = false;
+        
       if (component[target] && (component[id](event) === false))
-        if (event.preventDefault)
-          event.preventDefault();
-        else
-          event.returnValue = false;
+        result = false;
+      
+      return result;
     };
   },
   
-  getHTML:   function() { return this.element.innerHTML },  
-  getWidth:  function() { return this.element.offsetWidth },
-  getHeight: function() { return this.element.offsetHeight },
-
-  getPoint:  function() {
-    var point = [0, 0], element = this.element;
-    do {
-      point[0] += element.offsetTop  || 0;
-      point[1] += element.offsetLeft || 0;
-      element   = element.offsetParent;
-    } while (element);
-    return point;
+  toHTML: function() {
+    return this.element.innerHTML;
   },
-  
+    
   toString: function() {
     return this.element.id || this.container.toString();
   }
@@ -195,7 +225,7 @@ extend(Component, {
   }
 });
 
-Component.delegate('update', 'insert', 'append', 'empty', 'collect', 'remove', 'setTag', 'first', 'last', 'fade', 'appear');
+Component.delegate('update', 'insert', 'append', 'empty', 'collect', 'remove', 'setTag', 'first', 'last');
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substring(1);

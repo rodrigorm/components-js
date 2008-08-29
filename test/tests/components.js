@@ -2,7 +2,7 @@ bind('x');
 bind('y');
 bind('z');
 bind('s', {
-  toString: function() { return this.getHTML() }
+  toString: function() { return this.toHTML() }
 });
 
 function x(content) { return div('x', content) }
@@ -236,7 +236,7 @@ test('replace container content with text', function() {
   
   return this.update('abc').data == 'abc' &&
         !this.x &&
-         this.getHTML() == 'abc';
+         this.toHTML() == 'abc';
 });
 
 test('update text for container elements', function() {
@@ -432,12 +432,12 @@ test('create listeners for properties created during run', {
 });
 
 test('fire all listeners in sequence', {
-  a: { onClick: function() { this.update(this.getHTML() + 'a') } },
-  b: { onClick: function() { this.update(this.getHTML() + 'b') } },
-  c: { onClick: function() { this.update(this.getHTML() + 'c') } }
+  a: { onClick: function() { this.update(this.toHTML() + 'a') } },
+  b: { onClick: function() { this.update(this.toHTML() + 'b') } },
+  c: { onClick: function() { this.update(this.toHTML() + 'c') } }
 }, function() {
   this.append(div('a b c')).element.onclick();
-  return this.a.getHTML() == 'abc';
+  return this.a.toHTML() == 'abc';
 });
 
 // test('start and stop process', {

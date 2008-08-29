@@ -122,11 +122,11 @@ var Container = Class.create({
     return this.element = element;
   },
   
-  append: function(component, duration) {
-    return this.insert(component, null, duration);
+  append: function(component) {
+    return this.insert(component, null);
   },
      
-  insert: function(component, next, duration) {
+  insert: function(component, next) {
     if (typeof component == 'string')
       component = load(component);
     
@@ -148,9 +148,6 @@ var Container = Class.create({
       if (prev != insert)
         insert.move(prev, this, prev.next == insert ? prev.next.next : prev.next);
     }
-
-    if (duration && (duration > 0))
-      return component.appear(duration);
 
     return component;
   },
@@ -232,49 +229,11 @@ var Container = Class.create({
     return false;
   },
 
-  remove: function(duration) {
-    var container = this;
-    
-    if (duration > 0)
-      return this.fade(duration, function() { container.remove() });
-    
+  remove: function() {
     this.move();
     this.element.parentNode.removeChild(this.element);
   },
   
-  fade: function(duration, callback) {
-    var container = this;
-    
-    new Transition(container.element, 1, 0, duration, function(k) {
-      container.setOpacity(k);
-    }, function() {
-      container.element.style.display = 'none';
-      
-      if (callback)
-        callback.call(container);
-    });
-  },
-  
-  appear: function(duration, callback) {
-    this.element.style.display = '';
-    
-    var container = this;
-    
-    new Transition(container.element, 0, 1, duration, function(k) {
-      container.setOpacity(k);
-    }, function() {
-      if (callback)
-        callback.call(container);
-    });
-  },
-  
-  setOpacity: function(k) {
-    if (window.ActiveXObject)
-      this.element.style.filter = "alpha(opacity=" + (k * 100) + ")";
-    else
-      this.element.style.opacity = k;
-  },
-
   set: function(id, object) {
     var c;
     

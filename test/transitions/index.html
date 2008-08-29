@@ -6,7 +6,6 @@
 <script type="text/javascript" src="../../src/component.js" charset="utf-8"></script>
 <script type="text/javascript" src="../../src/tree.js" charset="utf-8"></script>
 <script type="text/javascript" src="../../src/request.js" charset="utf-8"></script>
-<script type="text/javascript" src="../../src/transition.js" charset="utf-8"></script>
 <script type="text/javascript" src="../../src/global.js" charset="utf-8"></script>
 
 <style type="text/css" media="screen">
@@ -25,7 +24,7 @@ bind('list', {
   },
   
   addItem: function(item) {
-    this.items.append(item, 250);
+    this.items.append(item).appear();
   }
 });
 
@@ -34,7 +33,7 @@ bind('items');
 bind('item', {
   
   onClickRemover: function() {
-    this.remove(250);
+    this.fade(true);
     return false;
   }
 });
