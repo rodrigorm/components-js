@@ -1,8 +1,9 @@
-File.open('dist/components.js', 'w+') do |f|
-  f.puts(File.read('src/HEADER'))
+BASE = File.dirname(__FILE__) << '/..'
+
+File.open("#{BASE}/dist/components.js", 'w+') do |f|
+  f.puts File.read("#{BASE}/src/HEADER")
   
-  %w(class component tree request transition globals tag).each do |source|
-    f.puts(File.read("src/#{source}.js"))
-    f.puts("\n")
-  end
+  f.puts(%w(class component tree request transition global).map do |source|
+    File.read("#{BASE}/src/#{source}.js")
+  end.join("\n\n"))
 end

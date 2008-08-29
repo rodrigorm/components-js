@@ -2,7 +2,7 @@ bind('x');
 bind('y');
 bind('z');
 bind('s', {
-  toString: function() { return this.element.innerHTML }
+  toString: function() { return this.getHTML() }
 });
 
 function x(content) { return div('x', content) }
@@ -72,7 +72,6 @@ test('precedence is given to the subtree over containers when assigning properti
   item: {}
 }, function() {
   this.insert(div('list', div('item', div('list'))));
-
   return this.list.item.list != this.list;
 });
 
@@ -259,6 +258,27 @@ test('cannot overwrite sub-components by setting text', function() {
   return this.x.z.element.parentNode == this.x.element;
 });
 
+test('update (container) element with text to create a text node only', function() {
+  this.update(div('foo'));
+
+  return this.element.firstChild      == this.element.lastChild &&
+         this.element.firstChild.data == div('foo');
+});
+
+test('update (control) element with HTML to create a text node only', function() {
+  this.append(x(div('foo'))).update({ foo: x() });
+
+  return this.x.foo.firstChild == this.x.foo.lastChild &&
+         this.x.foo.firstChild.data       == x();
+});
+
+test('prevent from updating non-default elements that may refer to components', function() {
+  this.append(x(y()));
+  this.foo = this.x.element;
+  this.update({ foo: '...' });
+  return this.x.element.firstChild == this.x.y.element;
+});
+
 test('each() is safe for iterations during which sub containers are removed', function() {
   this.append(s('one'));
   this.append(s('two'));
@@ -418,20 +438,6 @@ test('fire all listeners in sequence', {
 }, function() {
   this.append(div('a b c')).element.onclick();
   return this.a.getHTML() == 'abc';
-});
-
-test('update (container) element with text to create a text node only', function() {
-  this.update(div('foo'));
-
-  return this.element.firstChild      == this.element.lastChild &&
-         this.element.firstChild.data == div('foo');
-});
-
-test('update (control) element with HTML to create a text node only', function() {
-  this.append(x(div('foo'))).update({ foo: x() });
-
-  return this.x.foo.firstChild == this.x.foo.lastChild &&
-         this.x.foo.firstChild.data       == x();
 });
 
 // test('start and stop process', {
