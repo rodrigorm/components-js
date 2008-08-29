@@ -316,9 +316,5 @@ var Container = Class.create({
     var last;
     this.each(function() { last = this });
     return last;
-  },
-  
-  toString: function() {
-    return this.names.join(' ');
   }
 });

@@ -180,7 +180,7 @@ var Component = Class.create({
   },
     
   toString: function() {
-    return this.element.id || this.container.toString();
+    return this.element.id || this.element.className;
   }
 });
 
