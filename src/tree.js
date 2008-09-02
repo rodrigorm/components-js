@@ -263,18 +263,7 @@ var Container = Class.create({
     this.each(function() { last = this.components[name] || last });
     return last;
   },
-  
-  proceeding: function(name, ref, node, next) {
-    node = node || this.element;
-    next = next || this.first(name);
-    
-    if (node == ref)
-      return next;
-    
-    //if (node == next.element)
       
-  },
-    
   collect: function(name) {
     var list = [];
     this.each(function() { if (this.components[name]) list.push(this.components[name]) });
