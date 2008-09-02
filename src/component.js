@@ -17,11 +17,9 @@ var Component = Class.create({
   },
 
   each: function(name, iterator) {
-    var result;
-    
     return this.container.each(function() {
-      if (this.components[name] && (result = iterator.apply(this.components[name])))
-        return result;
+      if (this.components[name])
+        return iterator.apply(this.components[name]);
     });
   },
   
@@ -55,7 +53,7 @@ var Component = Class.create({
     // Trigger hasLayout in IE (fixes text rendering bug)
     if (window.ActiveXObject)
       s.width = this.element.offsetWidth + 'px';
-    
+
     this.morph(i, j, function(k) {
       s.display = k == 0 ? 'none' : '';
         
@@ -70,6 +68,7 @@ var Component = Class.create({
       s.display = s.opacity = s.filter = '';
     });
   },
+
   
   morph: function(i, j, iterator, finalize) {
     var k = i;
@@ -78,7 +77,7 @@ var Component = Class.create({
     
     this.start(function() {
       k += (i < j ? 1 : -1) * 0.05;
-      iterator.call(this, -1 * (Math.cos(Math.PI * k) - 1) / 2);
+      iterator.call(this, Math.round(-100 * (Math.cos(Math.PI * k) - 1) / 2) / 100);
       
       if ((j > i && k >= j) || (j < i && k <= j)) {
         if (finalize)
@@ -226,6 +225,13 @@ extend(Component, {
 });
 
 Component.delegate('update', 'insert', 'append', 'empty', 'collect', 'remove', 'setTag', 'first', 'last');
+
+// for (var i = 0, ids = 'update insert append empty collect remove setTag first last'.split(' '); i < ids.length; i++)
+//   Component.prototype[ids[i]] = function() {
+//     return this.container[ids[i]].apply(this.container, arguments);
+//   }
+  
+  
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substring(1);

@@ -70,7 +70,6 @@ var Container = Class.create({
 
   initialize: function(element, names, components, container) {
     this.element    = element;
-    this.document   = element.ownerDocument;
     this.container  = container;
     this.names      = names;
     this.components = components;
@@ -90,23 +89,24 @@ var Container = Class.create({
   update: function(object) {
     if (typeof object == 'string') {
       this.empty();
-      return this.element.appendChild(this.document.createTextNode(object));
+      return this.element.appendChild(document.createTextNode(object));
     } else {
       for (var name in object)
         if (this.objects[name] && this.objects[name].nodeType == 1) {
           this.objects[name].innerHTML = '';
-          this.objects[name].appendChild(this.document.createTextNode(object[name]));
+          this.objects[name].appendChild(document.createTextNode(object[name]));
         }
     }
   },
   
   empty: function() {
-    this.each(function() { this.move() });
+    var next = (this.getLast() || this).next;
+    while (this.next != next) this.next.move();
     this.element.innerHTML = '';
   },
     
   setTag: function(name) {
-    var element = this.document.createElement(name);
+    var element = document.createElement(name);
     
     while (this.element.firstChild)
       element.appendChild(this.element.firstChild);
@@ -224,8 +224,7 @@ var Container = Class.create({
 
   hasName: function(name) {
     for (var i = 0; i < this.names.length; i++)
-      if (this.names[i] == name)
-        return true;
+      if (this.names[i] == name) return true;
     return false;
   },
 
@@ -240,7 +239,7 @@ var Container = Class.create({
     for (var name in this.components) {
       c = this.components[name];
       
-      if (!c[id] || (c[id].nodeType == 1) || c[id].registerEventListeners) {
+      if (!c[id] || (c[id].nodeType == 1) || c[id].name) {
         c[id] = object;
         this.objects[id] = object;
       }
@@ -254,61 +253,54 @@ var Container = Class.create({
 
     delete(this.objects[id]);
   },
+  
+  first: function(name) {
+    return this.each(function() { return this.components[name] });
+  },
+  
+  last: function(name) {
+    var last;
+    this.each(function() { last = this.components[name] || last });
+    return last;
+  },
+  
+  proceeding: function(name, ref, node, next) {
+    node = node || this.element;
+    next = next || this.first(name);
+    
+    if (node == ref)
+      return next;
+    
+    //if (node == next.element)
+      
+  },
     
   collect: function(name) {
     var list = [];
-    this.each(function() {
-      if (this.components[name])
-        list.push(this.components[name]);
-    });
+    this.each(function() { if (this.components[name]) list.push(this.components[name]) });
     return list;
   },
- 
+   
   each: function(iterator) {
-    var prev = this, c = this.next;
-    
-    while (c && this.contains(c)) {
-      
-      if (result = iterator.apply(c))
-        return result;
-      
-      if (c == prev.next) {
-        prev = c;
-        c = c.next;
-      } else { // the container was removed - jump to the following
-        c = prev.next;
-      }
-    }
+    var result, c = this;
+    while ((c = c.next) && this.contains(c) && !(result = iterator.apply(c)));
+    return result;
   },
   
   contains: function(child) {
     var c = child;
-    
     while (c = c.container)
       if (c == this) return true;
-
     return false;
   },
-    
-  first: function(name) {
-    return this.each(function() {
-      return this.components[name];
-    });
-  },
-  
-  last: function(name) {
-    var component;
-    this.each(function() {
-      component = this.components[name] || component;
-    });
-    return component;
-  },
-    
+     
   seek: function(name, id, horizontal) {
     var component, c = this;    
-    do
-      c = c[id];
-    while (c && (!horizontal || c.container == this.container) && !(component = c.components[name]));
+
+    while ((c = c[id]) &&
+          (!horizontal || c.container == this.container) &&
+          !(component = c.components[name]));
+
     return component;
   },
   

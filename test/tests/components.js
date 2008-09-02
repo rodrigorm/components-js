@@ -11,6 +11,7 @@ function z(content) { return div('z', content) }
 function s(content) { return div('s', content) }
 
 
+
 test('build non-contained elements', function() {
   return build('<p></p>').tagName == 'P' && 
          build('<P></P>').tagName == 'P' && 
@@ -92,10 +93,30 @@ test('properties are updated after inserting a component', function() {
   return this._s == 'two' && this.s == 'one';
 });
 
-test('we can access the first and last descendent component of a given type', function() {
-  this.append(x(y(s('one')) + y(z(s('two')))));
-  return this.first('s') == 'one' && this.last('s') == 'two';
+test('access with first() and last()', function() {
+  this.append(x(s('a') + y(s('b')) + s('c') + y(z(s('d')))));
+  return this.collect('s') == 'a,b,c,d' && 
+         this.first('s') == 'a' && 
+         this.first('s').next() == 'b' && 
+         this.last('s').prev() == 'c'
+         this.last('s') == 'd';
 });
+
+test('iterate over components of some type with each()', function() {
+  this.append(x(s('a') + y(s('b') + s('c')) + s('d')));
+  return this.each('s', function() { if (this == 'c') return this }) == 'c';
+});
+
+test('remove all content with empty()', function() {
+  this.append(x( s('a') + y(z(s('b'))) + y(s('c')) ));
+  this.x.y.empty();
+  return this.collect('y').length == 2 && this.collect('s') == 'a,c' && !this.first('z');
+});
+
+// test('find the proceeding component for an element', function() {
+//   this.append(x(s('a') + y(s('b') + z(s('c')))));
+//   return this.find('s') == 'a';
+// });
 
 test('inserting a component in the same position leaves the tree unchanged (using first child)', function() {
   this.append(s('one'));
@@ -277,18 +298,6 @@ test('prevent from updating non-default elements that may refer to components', 
   this.foo = this.x.element;
   this.update({ foo: '...' });
   return this.x.element.firstChild == this.x.y.element;
-});
-
-test('each() is safe for iterations during which sub containers are removed', function() {
-  this.append(s('one'));
-  this.append(s('two'));
-  this.append(s('three'));
-
-  this.each('s', function() {
-    this.remove();
-  });
-  
-  return this.collect('s').length == 0;
 });
 
 test('handle elements by running callbacks for any top-level components', function() {
