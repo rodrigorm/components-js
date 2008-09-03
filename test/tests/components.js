@@ -113,10 +113,17 @@ test('remove all content with empty()', function() {
   return this.collect('y').length == 2 && this.collect('s') == 'a,c' && !this.first('z');
 });
 
-// test('find the proceeding component for an element', function() {
-//   this.append(x(s('a') + y(s('b') + z(s('c')))));
-//   return this.find('s') == 'a';
-// });
+test('find a container from itself', function() {
+  return this.container.find(this.element).container == this.container;
+});
+
+test('find the prev container to a node', function() {
+  this.append(x(span('a') + span('b') + y()));
+  
+  return this.container.find(this.x.a).next == this.x.y.container &&
+         this.container.find(this.x.b).prev == this.x.container &&
+         this.container.find(this.x.y.element).prev == this.x.container;
+});
 
 test('inserting a component in the same position leaves the tree unchanged (using first child)', function() {
   this.append(s('one'));

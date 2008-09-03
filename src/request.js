@@ -88,7 +88,7 @@ var Request = Class.create({
   
   getQuery: function(parameters) {
     var parts = [];
-    for (prop in parameters) {
+    for (var prop in parameters) {
       parts.push(encodeURIComponent(prop) + '=' + encodeURIComponent(parameters[prop]));
     }
     return parts.join('&');

@@ -196,7 +196,7 @@ extend(Component, {
   },
   
   matchListeners: function(source) {
-    var element, event, parts, matches = {};
+    var target, event, parts, matches = {};
 
     for (var id in source) {
       if (typeof source[id] == 'function') {

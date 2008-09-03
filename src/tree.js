@@ -100,7 +100,7 @@ var Container = Class.create({
   },
   
   empty: function() {
-    var next = (this.getLast() || this).next;
+    var next = (this._last() || this).next;
     while (this.next != next) this.next.move();
     this.element.innerHTML = '';
   },
@@ -143,7 +143,7 @@ var Container = Class.create({
     } else {
       this.element.appendChild(insert.element);
       
-      prev = this.getLast() || this;
+      prev = this._last() || this;
       
       if (prev != insert)
         insert.move(prev, this, prev.next == insert ? prev.next.next : prev.next);
@@ -177,7 +177,7 @@ var Container = Class.create({
       }
     }
     
-    var i = this, j = this.getLast() || this;
+    var i = this, j = this._last() || this;
 
     // Detach from list:
     if (i.prev) i.prev.next = j.next;
@@ -293,7 +293,27 @@ var Container = Class.create({
     return component;
   },
   
-  getLast: function() {
+  find: function(node) {
+    var c = this;
+    
+    function visit(n) {
+      if (c.next)
+        if (c.next.element == n)
+          c = c.next;
+      
+      if (node == n)
+        return c.element == n ?
+          { prev: c.prev, container: c, next: c.next } :
+          { prev: c, next: c.next };
+      
+      for (var o, i = 0; i < n.childNodes.length; i++)
+        if (o = visit(n.childNodes[i]))
+          return o;
+    }
+    return visit(this.element);
+  },
+  
+  _last: function() {
     var last;
     this.each(function() { last = this });
     return last;
