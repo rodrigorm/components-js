@@ -259,7 +259,7 @@ test('inserting markup returns the first newly created root component', function
   return this.append(x(y('...'))).y.x;
 });
 
-test('replace container content with text', function() {
+test('replace all container content with text', function() {
   this.append(x());
   
   return this.update('abc').data == 'abc' &&
@@ -267,11 +267,12 @@ test('replace container content with text', function() {
          this.toHTML() == 'abc';
 });
 
-test('update text for container elements', function() {
-  this.append(x('<span class="a"><span class="b">One</span><span class="c">Two</span></span>'));
-  this.x.update({ b: 'One!', c: 'Two!' });
+test('update text for elements', function() {
+  this.append(x(span('a s', 'one') + span('b s', 'two') + span('c s', 'three')));
+  this.x.foo = this.x.b;
+  this.x.update({ s: 'one!', foo: 'two!', c: 'three!' });
 
-  return this.x.b.innerHTML == 'One!' && this.x.c.innerHTML == 'Two!';
+  return this.collect('s') == 'one!,two!,three!';
 });
 
 test('update with an empty string creates an empty text node', function() {
@@ -293,11 +294,11 @@ test('update (container) element with text to create a text node only', function
          this.element.firstChild.data == div('foo');
 });
 
-test('update (control) element with HTML to create a text node only', function() {
-  this.append(x(div('foo'))).update({ foo: x() });
+test('only update elements with text-only or empty content', function() {
+  this.append(x(span('a', span('b'))));
+  this.x.update({ a: 'x', b: 'y' });
 
-  return this.x.foo.firstChild == this.x.foo.lastChild &&
-         this.x.foo.firstChild.data       == x();
+  return this.x.toHTML().toLowerCase() == span('a', span('b', 'y'));
 });
 
 test('prevent from updating non-default elements that may refer to components', function() {
@@ -343,7 +344,7 @@ test('handle an element with insertion', function() {
   return this.x.y.z.y.x == this.x;
 });
 
-test('flags are unique names prepended to the class name', function() {
+test('add and remove flags', function() {
   this.insert(x());
 
   this.x.apply('a');
@@ -356,6 +357,15 @@ test('flags are unique names prepended to the class name', function() {
   return (this.x.element.className == 'b a x') && this.x.a && this.x.b && !this.x.c;
 });
   
+test('setting flags always changes class, but only sets the property if it does not contain an object', function() {
+  var o = {};
+  
+  this.append(x()).apply('foo');
+  this.x.foo = o;
+  this.x.clear('foo');
+  return this.x.foo == o && this.x.element.className == 'x';
+});
+
 test('a component can only select one other component at a time', function() {
   this.append(x());
   this.x.append(y());
@@ -366,35 +376,12 @@ test('a component can only select one other component at a time', function() {
   return (this.selected == this.x.z) && !!this.x.z.selected && !this.x.y.selected;
 });
 
-// test('set flag for initially-selected component', function() {
-//   this.insert(x(div('s', 'one') + div('selected s', 'two') + div('s', 'three')));
-//   
-//   return this.x.s.next().selected === true;
-//   return this.x.selected == this.x.s.next();
-// });
-
-test('apply should overwrite the named property if it already exists', function() {
-  this.append(x());
-  this.x.i = 2;
-  this.x.apply('i');
-  return this.x.element.className == 'i x' && this.x.i === true;
-});
-
-test('clear should remove a class name even if the named property is not a boolean, and overwrite it', function() {
-  this.append(x());
-  this.x.apply('p');
-  this.x.p = 2;
-  this.x.clear('p');
-  return this.x.element.className == 'x' && this.x.p === false;
-});
-
-test('if a component is a selecting another component, and it itself is selected by a component, this.selected accesses the other component rather than being a flag', function() {
-  this.append(x(y()));
+test('nested selects', function() {
+  this.append(x(y(z())));
   this.x.select(this.x.y);
-  this.select(this.x);
-  this.select();
-
-  return !this.selected && this.x.selected == this.x.y;
+  this.x.y.select(this.x.y.z);
+  this.x.select();
+  return !this.x.selected && this.x.y.selected == this.x.y.z;
 });
 
 test('replace a container tag', function() {

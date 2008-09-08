@@ -85,20 +85,7 @@ var Container = Class.create({
       c.createListeners();
     }
   },
-    
-  update: function(object) {
-    if (typeof object == 'string') {
-      this.empty();
-      return this.element.appendChild(document.createTextNode(object));
-    } else {
-      for (var name in object)
-        if (this.objects[name] && this.objects[name].nodeType == 1) {
-          this.objects[name].innerHTML = '';
-          this.objects[name].appendChild(document.createTextNode(object[name]));
-        }
-    }
-  },
-  
+      
   empty: function() {
     var next = (this._last() || this).next;
     while (this.next != next) this.next.move();

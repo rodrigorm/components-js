@@ -23,6 +23,44 @@ var Component = Class.create({
     });
   },
   
+  clone: function(deep) {
+    return new Tree(this.element.cloneNode(deep)).i.components[this.name];
+  },
+  
+  apply: function(name) {
+    if (arguments.length == 1) {
+      this.container.addName(name);
+      this[name] = this[name] || true;
+    } else {
+      for (var i = 0; i < arguments.length; i++)
+        this.apply(arguments[i]);
+    }
+  },
+  
+  clear: function(name) {
+    if (arguments.length == 1) {
+      this.container.removeName(name);
+      
+      if (this[name] === true)
+        this[name] = false;
+    } else {
+      for (var i = 0; i < arguments.length; i++)
+        this.clear(arguments[i]);
+    }    
+  },
+  
+  select: function(component) {
+    if (this.selected != component) {
+      if (typeof this.selected == 'object')
+        this.selected.clear('selected');
+
+      if (this.selected = component)
+        this.selected.apply('selected');
+      
+      return component;
+    }
+  },
+  
   add: function(element) {
     var callback, tree = new Tree(element);
     
@@ -30,6 +68,32 @@ var Component = Class.create({
       for (var name in tree.i.components)
         if (this[callback = 'add' + name.capitalize()])
           this[callback](tree.i.components[name]);
+    }
+  },
+  
+  
+  update: function(data) {
+    var o;
+    
+    if (typeof data == 'string') {
+      this.empty();
+      return this.element.appendChild(document.createTextNode(data));
+    } else {  
+      for (var name in data) { 
+        if (o = this[name]) {
+          if (o.update) {
+            o.update(data[name]);
+          } else if (o.nodeType == 1) {
+            if (!o.firstChild) {
+              o.appendChild(document.createTextNode(data[name]));
+            } else if (o.firstChild == o.lastChild) {
+              if (o.firstChild.nodeType == 3) {
+                o.firstChild.data = data[name];
+              }
+            }
+          }
+        }
+      }
     }
   },
       
@@ -96,52 +160,6 @@ var Component = Class.create({
         clearInterval(id);
     }, period);
   },
-
-  clone: function(deep) {
-    return new Tree(this.element.cloneNode(deep)).i.components[this.name];
-  },
-  
-  apply: function(name) {
-    if (arguments.length == 1) {
-      this.container.addName(name)
-      this[name] = true;
-    } else {
-      for (var i = 0; i < arguments.length; i++)
-        this.apply(arguments[i]);
-    }
-  },
-  
-  clear: function(name) {
-    if (arguments.length == 1) {
-      this.container.removeName(name);
-      this[name] = false;
-    } else {
-      for (var i = 0; i < arguments.length; i++)
-        this.clear(arguments[i]);
-    }    
-  },
-  
-  select: function(component) {
-    if (this.selected == component)
-      return;
-
-    if (typeof this.selected == 'object') {
-      if (this.selected.selected === true)
-        this.selected.selected = false;
-
-      if (this.selected.container)
-        this.selected.container.removeName('selected');
-    }
-    
-    if (this.selected = component) {
-      if (component.container)
-        component.container.addName('selected');
-      
-      if (!component.selected)
-        component.selected = true;
-    }
-    return component;
-  },
     
   createListeners: function() {
     var element, attr;
@@ -152,7 +170,6 @@ var Component = Class.create({
         
         for (var event in this.matches[target])
           element[attr = 'on' + event] = this.createListener(this.matches[target][event], target, element[attr]);
-          
       }
   },
   
@@ -224,14 +241,7 @@ extend(Component, {
   }
 });
 
-Component.delegate('update', 'insert', 'append', 'empty', 'collect', 'remove', 'setTag', 'first', 'last');
-
-// for (var i = 0, ids = 'update insert append empty collect remove setTag first last'.split(' '); i < ids.length; i++)
-//   Component.prototype[ids[i]] = function() {
-//     return this.container[ids[i]].apply(this.container, arguments);
-//   }
-  
-  
+Component.delegate('insert', 'append', 'empty', 'collect', 'remove', 'setTag', 'first', 'last');
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substring(1);
