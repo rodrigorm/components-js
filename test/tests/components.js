@@ -453,6 +453,7 @@ test('create listeners for updated properties', {
   this.x.s.remove();
   this.x.append(s('b'));
   this.x.s.element.onclick();
+  this.x.s.remove().element.onclick();
   return this.x.clicks == 'ab';
 });
 

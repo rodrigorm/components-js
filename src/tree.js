@@ -224,6 +224,7 @@ var Container = Class.create({
   remove: function() {
     this.move();
     this.element.parentNode.removeChild(this.element);
+    return this;
   },
   
   set: function(id, object, listeners) {
