@@ -101,14 +101,17 @@ var Component = Class.create({
     new Request(this, method, url, parameters).send();
   },
   
-  fade: function(remove) {
+  fade: function(finalize) {
     this.morphO(1, 0, function() {
-      if (remove) this.remove();
+      if (finalize === true)
+        this.remove();
+      else if (finalize)
+        finalize.call(this);
     });
   },
   
-  appear: function() {
-    this.morphO(0, 1);
+  appear: function(finalize) {
+    this.morphO(0, 1, finalize);
   },
   
   morphO: function(i, j, finalize) {
@@ -161,16 +164,17 @@ var Component = Class.create({
     }, period);
   },
     
-  createListeners: function() {
-    var element, attr;
-    
+  createAllListeners: function() {
     for (var target in this.matches)
-      if (this[target]) {
-        element = this[target].element || this[target];
-        
-        for (var event in this.matches[target])
-          element[attr = 'on' + event] = this.createListener(this.matches[target][event], target, element[attr]);
-      }
+      if (this[target])
+        this.createListeners(target);
+  },
+  
+  createListeners: function(target) {
+    var attr, element = this[target].element || this[target];
+    
+    for (var event in this.matches[target] || {})
+      element[attr = 'on' + event] = this.createListener(this.matches[target][event], target, element[attr]);    
   },
   
   createListener: function(id, target, tail) {
@@ -241,7 +245,7 @@ extend(Component, {
   }
 });
 
-Component.delegate('insert', 'append', 'empty', 'collect', 'remove', 'setTag', 'first', 'last');
+Component.delegate('insert', 'append', 'replace', 'empty', 'collect', 'remove', 'setTag', 'first', 'last');
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substring(1);

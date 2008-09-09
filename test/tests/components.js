@@ -254,7 +254,14 @@ test('inserting a component moves the component in the tree', function() {
 
   return !!this.x.y.x;
 });
-       
+
+test('replace components', function() {
+  this.append(x(y()));
+  return this.x.replace(this.x.y) === this.y &&
+         this.y.replace(x()) === this.x &&
+         !this.x.y && !this.y;
+});
+
 test('inserting markup returns the first newly created root component', function() {
   return this.append(x(y('...'))).y.x;
 });
@@ -433,6 +440,20 @@ test('create listeners for properties created during run', {
 }, function() {
   this.append(div('a'));
   return !this.a.element.onclick && !!this.a.element.onmouseover && !!this.a.element.onmouseout;
+});
+
+test('create listeners for updated properties', {
+  x: {
+    onClickS: function() { this.clicks = (this.clicks || '') + this.s.toHTML() }
+  },
+  s: {}
+},function() {
+  this.append(x(s('a')));
+  this.x.s.element.onclick();
+  this.x.s.remove();
+  this.x.append(s('b'));
+  this.x.s.element.onclick();
+  return this.x.clicks == 'ab';
 });
 
 test('fire all listeners in sequence', {

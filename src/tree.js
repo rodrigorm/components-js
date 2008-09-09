@@ -82,7 +82,7 @@ var Container = Class.create({
       c = this.components[name];
       if (c.run)
         c.run();
-      c.createListeners();
+      c.createAllListeners();
     }
   },
       
@@ -138,7 +138,13 @@ var Container = Class.create({
 
     return component;
   },
-    
+  
+  replace: function(component) {
+    component = this.container.insert(component, this);
+    this.remove();
+    return component;
+  },
+  
   move: function(prev, container, next) {
     if (this.container) {
       // Remove references to containing components:
@@ -159,7 +165,7 @@ var Container = Class.create({
             c = c.next()
 
           if (c && this.container.contains(c))
-            this.container.set(name, c);            
+            this.container.set(name, c, true);
         }
       }
     }
@@ -179,12 +185,12 @@ var Container = Class.create({
         // Create/update reference if this is the new first instance of it's type:
         if (!container.objects[name] || (container.objects[name] != container.first(name))) {
           container.unset(name);
-          container.set(name, this.components[name]);
+          container.set(name, this.components[name], true);
         }
       }
       
       for (var name in container.components)
-        this.objects[name] || this.set(name, container.components[name]);
+        this.objects[name] || this.set(name, container.components[name], true);
     }
   },
   
@@ -220,7 +226,7 @@ var Container = Class.create({
     this.element.parentNode.removeChild(this.element);
   },
   
-  set: function(id, object) {
+  set: function(id, object, listeners) {
     var c;
     
     for (var name in this.components) {
@@ -229,6 +235,9 @@ var Container = Class.create({
       if (!c[id] || (c[id].nodeType == 1) || c[id].name) {
         c[id] = object;
         this.objects[id] = object;
+        
+        if (listeners)
+          c.createListeners(id);
       }
     }
     this.objects[id];
