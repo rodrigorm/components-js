@@ -298,7 +298,8 @@ test('only update elements with text-only or empty content', function() {
   this.append(x(span('a', span('b'))));
   this.x.update({ a: 'x', b: 'y' });
 
-  return this.x.toHTML().toLowerCase() == span('a', span('b', 'y'));
+  return this.x.a.firstChild == this.x.b && 
+         this.x.b.firstChild.data == 'y';
 });
 
 test('prevent from updating non-default elements that may refer to components', function() {
