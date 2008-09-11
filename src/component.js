@@ -22,11 +22,7 @@ var Component = Class.create({
         return iterator.apply(this.components[name]);
     });
   },
-  
-  clone: function(deep) {
-    return new Tree(this.element.cloneNode(deep)).i.components[this.name];
-  },
-  
+    
   apply: function(name) {
     if (arguments.length == 1) {
       this.container.addName(name);
@@ -62,22 +58,29 @@ var Component = Class.create({
   },
   
   add: function(element) {
-    var callback, tree = new Tree(element);
+    var container, callback;
     
-    if (tree.i && (tree.i.element == element)) {
-      for (var name in tree.i.components)
+    if (container = this.container.tree.load(element))    
+      for (var name in container.components)
         if (this[callback = 'add' + name.capitalize()])
-          this[callback](tree.i.components[name]);
-    }
+          this[callback](container.components[name]);
   },
   
+  remove: function() {
+    this.container.remove();
+    return this;
+  },
+  
+  clone: function(deep) {
+    return this.container.clone(deep).components[this.name];
+  },
   
   update: function(data) {
     var o;
     
     if (typeof data == 'string') {
       this.empty();
-      return this.element.appendChild(document.createTextNode(data));
+      this.element.appendChild(document.createTextNode(data));
     } else {  
       for (var name in data) { 
         if (o = this[name]) {
@@ -95,6 +98,7 @@ var Component = Class.create({
         }
       }
     }
+    return this;
   },
       
   request: function(method, url, parameters) {
@@ -211,6 +215,8 @@ extend(Component, {
   errors: false,
   
   extend: function(source) {
+    source = source || {};
+    
     return Class.create(extend(extend({
       matches: Component.matchListeners(source)
     }, this.prototype), source));
@@ -245,7 +251,7 @@ extend(Component, {
   }
 });
 
-Component.delegate('insert', 'append', 'replace', 'empty', 'collect', 'remove', 'setTag', 'first', 'last');
+Component.delegate('build', 'insert', 'append', 'replace', 'empty', 'collect', 'setTag', 'first', 'last');
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substring(1);

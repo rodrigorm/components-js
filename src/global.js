@@ -1,55 +1,11 @@
-var bindings = {};
-  
+var tree;
+
 function bind(name, source) {
-  return bindings[name] = Component.extend(source);
+  return tree.bind(name, source);
 };
 
-function register(callback) {
-  var userAgent = navigator.userAgent.toLowerCase();
-
-  if (/webkit/.test(userAgent)) {
-    var timeout = setTimeout(function() {
-      if (document.readyState == 'loaded' || document.readyState == 'complete' ) {
-        callback();
-      } else {
-        setTimeout(arguments.callee, 10);
-      }
-    }, 10); 
-  } else if ((/mozilla/.test(userAgent) && !/(compatible)/.test(userAgent)) || (/opera/.test(userAgent))) {
-    document.addEventListener('DOMContentLoaded', callback, false);
-  } else if (document.uniqueID && document.expando) { // http://www.hedgerwow.com/360/dhtml/ie-dom-ondocumentready.html
-    var element = document.createElement('span'); 
-    
-    (function () { 
-      if (document.loaded) return;
-
-      try {
-        element.doScroll('left');
-        
-        if (!document.body)
-          throw new Error();
-        
-        document.loaded = true;
-        callback();
-        element = null; 
-      } catch(e) {
-        setTimeout(arguments.callee, 0); 
-      } 
-    })();
-  }
-};
-  
-function load(object) {
-  if (typeof object == 'string')
-    object = build(object);
-  
-  var tree = new Tree(object);
-  
-  if (tree.i && tree.i.element == object)
-    for (var name in tree.i.components)
-      return tree.i.components[name];
-  
-  return object;
+function start() {
+  tree.load(document.body);
 };
     
 function build(text) {
@@ -60,15 +16,15 @@ function build(text) {
     element = document.createElement('div');
     text    = text.slice(text.indexOf('<'));
 
-    var depth = 1;
-    while (name = build.Tags[name]) {
-      text = tag(name, null, text);
-      depth++;
+    var j = 1;
+    while (name = build.Containers[name]) {
+      text = '<' + name + '>' + text + '</' + name + '>';
+      j++;
     }
     
     element.innerHTML = text;
 
-    for (var i = 0; i < depth; i++)
+    for (var i = 0; i < j; i++)
       element = element.firstChild;
     
     element.parentNode.removeChild(element);
@@ -76,25 +32,19 @@ function build(text) {
   return element;
 };
 
-build.Tags = {
+build.Containers = {
   li:    'ul',
   td:    'tr',
   tr:    'tbody',
   tbody: 'table'
 };
 
-function span(names, content) {
-  return tag('span', names, content);
-};
+function extend(object, source) {
+  for (var id in source)
+    object[id] = source[id];
 
-function div(names, content) {
-  return tag('div', names, content);
-};
+  if (source.toString != Object.prototype.toString) // force IE to recognise when we override toString
+    object.toString = source.toString;
 
-function tag(name, names, content) {
-  return '<' + name + (names ? ' class="' + names + '"': '') + '>' + (content || '') + '</' + name + '>';
-};
-
-register(function() {
-  load(document.body);
-});
+  return object;
+}

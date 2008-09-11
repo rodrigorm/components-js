@@ -12,7 +12,7 @@ var Request = Class.create({
       this.method = 'POST';
     }
 
-    this.parameters = extend({}, parameters)
+    this.parameters = extend({}, parameters || {})
     this.query      = this.getQuery(this.parameters);
     
     if ((this.method == 'GET') && this.query) {
