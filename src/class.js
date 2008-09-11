@@ -12,15 +12,3 @@ var Class = {
     return klass;
   }
 };
-
-function extend(object, source) {
-  source = source || {};
-  
-  for (var id in source)
-    object[id] = source[id];
-
-  if (source.toString != Object.prototype.toString) // force IE to recognise when we override toString
-    object.toString = source.toString;
-
-  return object;
-}

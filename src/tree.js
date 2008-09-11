@@ -1,78 +1,95 @@
 var Tree = Class.create({
   
-  initialize: function(element, container) {
-    this.load(element, container);
-    this.invoke('run');
+  initialize: function(bindings) {
+    this.bindings = bindings || {};
   },
   
-  load: function(element, parent) {
-    var container, components = {}, list = [];
+  bind: function(name, source) {
+    this.bindings[name] = Component.extend(source);
+  },
+  
+  load: function(element) {
+    var container, c, first, last, tree = this;
     
-    if (element.className)
-      list = element.className.split(' ');
-    if (element.id)
-      list.unshift(element.id);
+    function add(container) {
+      link(last, container);
+      first = first || container;
+      return last = container;
+    };
     
-    for (var i = 0, id, ids = []; i < list.length; i++) {
-      id = list[i];
+    function link(i, j) {
+      if (i) {
+        i.next = j;
+        j.prev = i;
+      }
+      return j;
+    };
+    
+    function visit(element, parent) {
+      var container, components = {}, flags = {}, all = [], names = [];
       
-      if (!ids[id]) {
-        ids[id] = true;
+      if (element.className)
+        all = element.className.split(' ');
+      if (element.id)
+        all.unshift(element.id);
+
+      names._h = {}; // keep a hash for easy lookup in future
+
+      for (var name, i = 0; i < all.length; i++) {
+        name = all[i];
         
-        if (id != element.id)
-          ids.push(id);
-        
-        if (bindings[id]) {
-          container = container || this.push(new Container(element, ids, components, parent));
-          components[id] = new bindings[id](container, id);
-        }
-        if (parent) {
-          parent.objects[id] || parent.set(id, components[id] || element);
+        if (!names._h[name]) { // filter out duplicates
+          if (name != element.id) {
+            names.push(name);
+            names._h[name] = true;
+          }
+          
+          if (tree.bindings[name]) {
+            container = container || add(new Container(tree, element, names, components, parent));
+            components[name] = new tree.bindings[name](container, name);
+          } else if (name != element.id) { // class with no definition - it's a flag
+            flags[name] = true;
+          }
+          
+          if (parent) // make child references
+            parent.objects[name] || parent.set(name, components[name] || element);
         }
       }
-    }
-    
-    for (var i = 0, node; i < element.childNodes.length; i++) {
-      node = element.childNodes[i];
+
+      for (var flag in flags)
+        for (var name in components)
+          components[name][flag] = components[name][flag] || true;
+
+      for (var i = 0, node; i < element.childNodes.length; i++) // visit the subtree
+        if ((node = element.childNodes[i]).nodeType == 1)
+          visit(node, container || parent);
+
+      if (parent && container)  // make parent references
+        for (var name in parent.components)
+          container.objects[name] || container.set(name, parent.components[name]);     
       
-      if (node.nodeType == 1)
-        this.load(node, container || parent);
+      return container; 
     }
+        
+    container = visit(element);
     
-    if (parent && container)
-      for (var name in parent.components)
-        container.objects[name] || container.set(name, parent.components[name]);
-  },
-  
-  push: function(item) {
-    if (this.j) {
-      item.prev   = this.j;
-      this.j.next = item;
-    }
-    
-    this.i = this.i || item;
-    this.j = item;
-    
-    return item;
-  },
-      
-  invoke: function(method) {
-    var container;
-    
-    if (container = this.i)
+    if (c = first)
       do
-        container[method]();
-      while ((container = container.next) && (container != this.j.next));    
+        c.run();
+      while ((c = c.next) && (c != last.next));    
+    
+    return container;
   }
 });
 
 var Container = Class.create({
 
-  initialize: function(element, names, components, container) {
+  initialize: function(tree, element, names, components, container) {
+    this.tree       = tree;
     this.element    = element;
-    this.container  = container;
     this.names      = names;
     this.components = components;
+    this.container  = container;
     this.objects    = {};
   },
     
@@ -82,158 +99,151 @@ var Container = Class.create({
       c = this.components[name];
       if (c.run)
         c.run();
-      c.createListeners();
-    }
-  },
-    
-  update: function(object) {
-    if (typeof object == 'string') {
-      this.empty();
-      return this.element.appendChild(document.createTextNode(object));
-    } else {
-      for (var name in object)
-        if (this.objects[name] && this.objects[name].nodeType == 1) {
-          this.objects[name].innerHTML = '';
-          this.objects[name].appendChild(document.createTextNode(object[name]));
-        }
+      c.createAllListeners();
     }
   },
   
+  clone: function(deep) {
+    return this.tree.load(this.element.cloneNode(deep));
+  },
+      
   empty: function() {
     var next = (this._last() || this).next;
-    while (this.next != next) this.next.move();
+    while (this.next != next) this.next.detach();
     this.element.innerHTML = '';
   },
     
   setTag: function(name) {
     var element = document.createElement(name);
     
+    element.className = this.element.className;
+    
     while (this.element.firstChild)
       element.appendChild(this.element.firstChild);
     
     this.element.parentNode.replaceChild(element, this.element);
     
-    return this.setElement(element);
-  },
-  
-  setElement: function(element) {
     for (var name in this.components)
       this.components[name].element = element;
-    return this.element = element;
+    
+    this.element = element;
+    
+    return this;
+  },
+    
+  replace: function(component) {
+    component = this.container.insert(component, this);
+    this.remove();
+    return component;
+  },
+  
+  build: function(name, data, next) {
+    var com;
+    
+    if (com = this.components[name] || this.seek(name, 'prev') || this.seek(name, 'next'))
+      return this.insert(com.clone(true).update(data || ''), next);
+    else
+      throw new Error('No instances for ' + name);
   },
   
   append: function(component) {
     return this.insert(component, null);
   },
      
-  insert: function(component, next) {
-    if (typeof component == 'string')
-      component = load(component);
-    
-    var prev, container = this, insert = component.container;
-    
-    if (next) {
-      if (next.name)
-        next = next.container;
-      
-      if (next != insert.next) {
-        this.element.insertBefore(insert.element, next.element);
-        insert.move(next.prev, this, next);
-      }
-    } else {
-      this.element.appendChild(insert.element);
-      
-      prev = this._last() || this;
-      
-      if (prev != insert)
-        insert.move(prev, this, prev.next == insert ? prev.next.next : prev.next);
+  insert: function(o, next) {
+    var c, prev, com;
+        
+    if (o.name) {
+      com = o;
+      com.container.detach();
+    } else if (typeof o == 'string') {
+      if (c = this.tree.load(build(o)))
+        com = (function() { for (var name in c.components) return c.components[name] })();
+      else
+        throw new Error('No top-level components yielded: ' + o);
     }
+    
+    if (next)
+      this.element.insertBefore(com.element, next.element);
+    else
+      this.element.appendChild(com.element);
+    
+    if (next && next.name)
+      next = next.container;
 
-    return component;
+    next = next || (this._last() || this).next;
+        
+    com.container.attach(next ? next.prev : this, this, next);
+    return com;
   },
+  
+  detach: function() {
+    var com, i = this, j = this._last() || this;
     
-  move: function(prev, container, next) {
-    if (this.container) {
-      // Remove references to containing components:
-      for (var name in this.objects) {
-        if (this.objects[name].element == this.container.element)
-          this.unset(name);
-        }
-      
-      // Remove/update child references to these components:
-      for (var name in this.container.objects) {
-        if (this.container.objects[name].element == this.element) {
-          this.container.unset(name);
-          
-          // If there is a later child with this name, move pointer to that:
-          var c = this.seek(name, 'next');
-          
-          while (c && this.contains(c))
-            c = c.next()
-
-          if (c && this.container.contains(c))
-            this.container.set(name, c);            
-        }
-      }
-    }
-    
-    var i = this, j = this._last() || this;
-
-    // Detach from list:
     if (i.prev) i.prev.next = j.next;
     if (j.next) j.next.prev = i.prev;
     
-    // Re-attach in new position:
+    if (this.container) {
+      // Remove parent references:
+      for (var name in this.objects)
+        if (this.objects[name].element == this.container.element)
+          this.unset(name);
+      
+      // Remove/update our parents references to our components:
+      for (var name in this.container.objects)
+        if (this.container.objects[name].element == this.element)
+          if (com = this.components[name].next(true))
+            this.container.set(name, com, true);
+          else
+            this.container.unset(name);
+    }
+  },
+  
+  attach: function(prev, container, next) {
+    var i = this, j = this._last() || this;
+    
     if (i.prev = prev) prev.next = i;
     if (j.next = next) next.prev = j;
     
     if (this.container = container) {
-      for (var name in this.components) {
-        // Create/update reference if this is the new first instance of it's type:
-        if (!container.objects[name] || (container.objects[name] != container.first(name))) {
-          container.unset(name);
-          container.set(name, this.components[name]);
-        }
-      }
+      // New child references:
+      for (var name in this.components)
+        if (!this.components[name].prev(true))
+          container.set(name, this.components[name], true);
       
+      // New parent references:
       for (var name in container.components)
-        this.objects[name] || this.set(name, container.components[name]);
+        this.objects[name] || this.set(name, container.components[name], true);
     }
   },
-  
+      
   addName: function(name) {
-    if (!this.hasName(name)) {
+    if (!this.names._h[name]) {
       this.names.unshift(name);
+      this.names._h[name] = true;
       this.element.className = this.names.join(' ');
     }
     return this.names;
   },
   
   removeName: function(name) {
-    if (name == this.element.id)
-      return;
-    
-    for (var i = 0; i < this.names.length; i++) {
-      if (this.names[i] == name) {
-        this.names.splice(i, i + 1);
-        return this.element.className = this.names.join(' ');
-      }
-    }
-    return this.element.className;
-  },
-
-  hasName: function(name) {
-    for (var i = 0; i < this.names.length; i++)
-      if (this.names[i] == name) return true;
-    return false;
+    if (this.names._h[name])
+      for (var i = 0; i < this.names.length; i++)
+        if (this.names[i] == name) {
+          this.names.splice(i, 1);
+          this.names._h[name] = false;
+          return this.element.className = this.names.join(' ');
+        }
+    return this.names;
   },
 
   remove: function() {
-    this.move();
+    this.detach();
     this.element.parentNode.removeChild(this.element);
+    return this;
   },
   
-  set: function(id, object) {
+  set: function(id, object, listeners) {
     var c;
     
     for (var name in this.components) {
@@ -242,11 +252,14 @@ var Container = Class.create({
       if (!c[id] || (c[id].nodeType == 1) || c[id].name) {
         c[id] = object;
         this.objects[id] = object;
+        
+        if (listeners)
+          c.createListeners(id);
       }
     }
     this.objects[id];
   },
-  
+    
   unset: function(id) {
     for (var name in this.components)
       delete(this.components[name][id]);
@@ -275,22 +288,20 @@ var Container = Class.create({
     while ((c = c.next) && this.contains(c) && !(result = iterator.apply(c)));
     return result;
   },
-  
-  contains: function(child) {
-    var c = child;
+    
+  contains: function(c) {
     while (c = c.container)
       if (c == this) return true;
     return false;
   },
-     
+   
   seek: function(name, id, horizontal) {
-    var component, c = this;    
+    var com, c = this;    
 
-    while ((c = c[id]) &&
-          (!horizontal || c.container == this.container) &&
-          !(component = c.components[name]));
-
-    return component;
+    while ((c = c[id]) && (!horizontal || !this.container || this.container.contains(c)))
+      if (!horizontal || c.container == this.container)
+        if (com = c.components[name])
+          return com;
   },
   
   find: function(node) {

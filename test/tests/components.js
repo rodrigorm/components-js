@@ -10,7 +10,7 @@ function y(content) { return div('y', content) }
 function z(content) { return div('z', content) }
 function s(content) { return div('s', content) }
 
-
+function div(names, content) { return '<div class="' + (names || '') + '">' + (content || '') + '</div>' };
 
 test('build non-contained elements', function() {
   return build('<p></p>').tagName == 'P' && 
@@ -29,12 +29,7 @@ test('build the first tag, ignore subsequent top-level tags', function() {
          build('<li></li> <strong></strong>').tagName == 'LI';
 });
 
-test('load HTML to yield components', function() {
-  var component = load('<div id="x"></div>');
-  return component.name == 'x' && component.element.tagName == 'DIV';
-});
-
-test('yield components from both class names and ids', function() {
+test('identify components with either class names and ids', function() {
   this.append('<span id="x">..</span>');
   this.append('<span class="x">..</span>');
   return this.collect('x').length == 2;
@@ -67,22 +62,34 @@ test('a component has access to the first instance of a sub-component', function
          this.x.collect('s') == 'a,b';
 });
 
-test('precedence is given to the subtree over containers when assigning properties', {
-  
-  list: {},
-  item: {}
-}, function() {
-  this.insert(div('list', div('item', div('list'))));
-  return this.list.item.list != this.list;
+test('precedence is given to the subtree over containers when assigning properties', function() {
+  return this.build('x').build('y').build('x').y.x == this.last('x');
 });
 
 test('properties are updated after removing a child component', function() {
   this.append(s('one'));
   this.append(s('two'));
-
   this.s.remove();
-
   return this.s == 'two';
+});
+
+test('seek', function() {
+  this.build('s', 'a');
+  this.build('x');
+  this.x.build('s', 'b');
+  this.x.build('s', 'c');
+  this.build('s', 'd');
+  
+  return [this.s, this.s.next(), this.s.next().next(), this.s.next().next().next(), this.s.next().next().next().next()] == 'a,b,c,d,' &&
+         [this.s, this.s.next(true), this.s.next(true).next(true)] == 'a,d,' &&
+         [this.x.s, this.x.s.next(true), this.x.s.next(true).next(true)] == 'b,c,';
+});
+
+test('la la la', function() {
+  this.build('x').build('y').build('z');
+  this.build('y').build('z');
+  this.x.replace(this.x.y.z);
+  return this.z.next().y == this.y;
 });
 
 test('properties are updated after inserting a component', function() {
@@ -118,7 +125,7 @@ test('find a container from itself', function() {
 });
 
 test('find the prev container to a node', function() {
-  this.append(x(span('a') + span('b') + y()));
+  this.append(x(div('a') + div('b') + y()));
   
   return this.container.find(this.x.a).next == this.x.y.container &&
          this.container.find(this.x.b).prev == this.x.container &&
@@ -145,7 +152,7 @@ test('remove all child instances of a component', function() {
   this.append(x(x(x())));
   this.append(x());
   this.append(x());
-
+  
   while (this.x) {
     this.x.remove();
     i++;
@@ -188,16 +195,7 @@ test('update containers after a removal', function() {
   return this.y.z && this.y.container.container && !this.y.x;
 });
 
-test('components are accessible as lists', function() {
-  this.append(s('one'));
-  this.append(s('two'));
-  this.append(s('three'));
 
-  return this.s == 'one' &&
-         this.s.next() == 'two' &&
-         this.s.next().next() == 'three'
-         this.s.next().next().prev() == 'two';
-});
 
 test('lists are updated after inserting a new component', function() {
   this.append(s('one'));
@@ -228,7 +226,7 @@ test('the whole tree is accessible when a component run', {
   }
 }, function() {
   this.append(div('collection', div('item') + div('item')));
-  
+
   return this.collection.passed && this.collection.item.passed && this.collection.last('item').passed;
 });
 
@@ -247,6 +245,20 @@ test('every component is run exactly once', {
   return !this.each('a', function() { return this.count != 1 });
 });
 
+test('new components are run after being added', {
+  x: {
+    addY: function(y) { this.y = y }
+  },
+  
+  y: {
+    run: function() { this.ready = true }
+  }
+}, function() {
+  this.append(x());
+  this.x.add(build(y()));
+  return this.x.y && this.x.y.ready;
+});
+
 test('inserting a component moves the component in the tree', function() {
   this.append(x());
   this.append(y());
@@ -254,28 +266,44 @@ test('inserting a component moves the component in the tree', function() {
 
   return !!this.x.y.x;
 });
-       
+
+test('replace components', function() {
+  this.append(x(y()));
+  return this.x.replace(this.x.y) === this.y &&
+         this.y.replace(x()) === this.x &&
+         !this.x.y && !this.y;
+});
+
+test('spawn components from those already in the tree', {
+  foo: {}
+},
+function() {
+  this.append(div('foo'));
+  return this.build('foo').toHTML() == '' && this.build('foo', 'abc').toHTML() == 'abc';
+});
+
 test('inserting markup returns the first newly created root component', function() {
   return this.append(x(y('...'))).y.x;
 });
 
-test('replace container content with text', function() {
+test('replace all container content with text', function() {
   this.append(x());
   
-  return this.update('abc').data == 'abc' &&
-        !this.x &&
-         this.toHTML() == 'abc';
+  return this.update('abc').toHTML() == 'abc' &&
+        !this.x;
 });
 
-test('update text for container elements', function() {
-  this.append(x('<span class="a"><span class="b">One</span><span class="c">Two</span></span>'));
-  this.x.update({ b: 'One!', c: 'Two!' });
+test('update text for elements', function() {
+  this.append(x(div('a s', 'one') + div('b s', 'two') + div('c s', 'three')));
+  this.x.foo = this.x.b;
+  this.x.update({ s: 'one!', foo: 'two!', c: 'three!' });
 
-  return this.x.b.innerHTML == 'One!' && this.x.c.innerHTML == 'Two!';
+  return this.collect('s') == 'one!,two!,three!';
 });
 
 test('update with an empty string creates an empty text node', function() {
-  return this.update('').nodeType == 3 && !!this.element.firstChild;
+  return this.update('').element.childNodes.length == 1 &&
+         this.element.childNodes[0].data === '';
 });
 
 test('cannot overwrite sub-components by setting text', function() {
@@ -293,11 +321,12 @@ test('update (container) element with text to create a text node only', function
          this.element.firstChild.data == div('foo');
 });
 
-test('update (control) element with HTML to create a text node only', function() {
-  this.append(x(div('foo'))).update({ foo: x() });
+test('only update elements with text-only or empty content', function() {
+  this.append(x(div('a', div('b'))));
+  this.x.update({ a: 'x', b: 'y' });
 
-  return this.x.foo.firstChild == this.x.foo.lastChild &&
-         this.x.foo.firstChild.data       == x();
+  return this.x.a.firstChild == this.x.b && 
+         this.x.b.firstChild.data == 'y';
 });
 
 test('prevent from updating non-default elements that may refer to components', function() {
@@ -343,19 +372,44 @@ test('handle an element with insertion', function() {
   return this.x.y.z.y.x == this.x;
 });
 
-test('flags are unique names prepended to the class name', function() {
-  this.insert(x());
+test('add and remove flags', function() {
+  this.append('<div id="shiny" class="a b x"> </div>');
 
-  this.x.apply('a');
-  this.x.apply('b');
-  this.x.apply('b');
-  this.x.apply('c');
-  this.x.clear('c');
-  this.x.clear('c');
+  if (this.x.shiny)
+    return false;
+
+  this.x.apply('shiny');
+  this.x.apply('length');
+  this.x.apply('foo');
+  this.x.apply('foo');
+  this.x.apply('bar');
+  this.x.clear('bar');
+  this.x.clear('bar');
+  this.x.clear('b');
   
-  return (this.x.element.className == 'b a x') && this.x.a && this.x.b && !this.x.c;
+  this.x.c = this;
+  this.x.apply('c');
+
+  return this.x.element.className == 'c foo length shiny a x' && 
+         this.x.element.id == 'shiny' &&
+         this.x.c == this &&
+         this.x.foo === true &&
+         this.x.length === true && 
+         this.x.shiny === true && 
+         this.x.a === true
+         this.x.bar === false &&
+         this.x.b === false;
 });
   
+test('setting flags always changes class, but only sets the property if it does not contain an object', function() {
+  var o = {};
+  
+  this.append(x()).apply('foo');
+  this.x.foo = o;
+  this.x.clear('foo');
+  return this.x.foo == o && this.x.element.className == 'x';
+});
+
 test('a component can only select one other component at a time', function() {
   this.append(x());
   this.x.append(y());
@@ -366,53 +420,37 @@ test('a component can only select one other component at a time', function() {
   return (this.selected == this.x.z) && !!this.x.z.selected && !this.x.y.selected;
 });
 
-// test('set flag for initially-selected component', function() {
-//   this.insert(x(div('s', 'one') + div('selected s', 'two') + div('s', 'three')));
-//   
-//   return this.x.s.next().selected === true;
-//   return this.x.selected == this.x.s.next();
+test('nested selects', function() {
+  this.append(x(y(z())));
+  this.x.select(this.x.y);
+  this.x.y.select(this.x.y.z);
+  this.x.select();
+  return !this.x.selected && this.x.y.selected == this.x.y.z;
+});
+
+// test('set a container tag', {
+//   x: {
+//     onClick: function() { this.clicked = true }
+//   }
+// },
+// function() {
+//   this.append('<div class="x a"> </div>').setTag('span');
+//   this.x.element.onclick();
+//   return this.element.getElementsByTagName('span')[0] == this.x.element &&
+//          this.x.element.className == 'x a' &&
+//          this.a == this.x.element &&
+//          this.x.clicked;
 // });
 
-test('apply should overwrite the named property if it already exists', function() {
-  this.append(x());
-  this.x.i = 2;
-  this.x.apply('i');
-  return this.x.element.className == 'i x' && this.x.i === true;
-});
-
-test('clear should remove a class name even if the named property is not a boolean, and overwrite it', function() {
-  this.append(x());
-  this.x.apply('p');
-  this.x.p = 2;
-  this.x.clear('p');
-  return this.x.element.className == 'x' && this.x.p === false;
-});
-
-test('if a component is a selecting another component, and it itself is selected by a component, this.selected accesses the other component rather than being a flag', function() {
-  this.append(x(y()));
-  this.x.select(this.x.y);
-  this.select(this.x);
-  this.select();
-
-  return !this.selected && this.x.selected == this.x.y;
-});
-
-test('replace a container tag', function() {
-  this.append(x(s('a') + y(s('b')) + s('c'))).setTag('p');
-  return this.x.element.tagName == 'P' && this.x.collect('s') == 'a,b,c';
-});
-
-test('match listeners', function() {
-  
-  var component = new (Component.extend({
-    
+test('recognise listeners', {
+  z: {
     onclickx:      false,
     onMouseOverX:  function() {},
     _onMouseOverY: function() {}
-    
-  }))(load(x()));
-  
-  return !component.matches.x.click && (component.matches.x.mouseover == 'onMouseOverX') && !component.matches.y
+  }
+}, function() {
+  var com = this.append(z());
+  return !com.matches.x.click && (com.matches.x.mouseover == 'onMouseOverX') && !com.matches.y
 });
 
 test('create listeners for default properties (elements and components)', {
@@ -447,6 +485,21 @@ test('create listeners for properties created during run', {
   return !this.a.element.onclick && !!this.a.element.onmouseover && !!this.a.element.onmouseout;
 });
 
+test('create listeners for updated properties', {
+  x: {
+    onClickS: function() { this.clicks = (this.clicks || '') + this.s.toHTML() }
+  },
+  s: {}
+},function() {
+  this.append(x(s('a')));
+  this.x.s.element.onclick();
+  this.x.s.remove();
+  this.x.append(s('b'));
+  this.x.s.element.onclick();
+  this.x.s.remove().element.onclick();
+  return this.x.clicks == 'ab';
+});
+
 test('fire all listeners in sequence', {
   a: { onClick: function() { this.update(this.toHTML() + 'a') } },
   b: { onClick: function() { this.update(this.toHTML() + 'b') } },
@@ -455,21 +508,3 @@ test('fire all listeners in sequence', {
   this.append(div('a b c')).element.onclick();
   return this.a.toHTML() == 'abc';
 });
-
-// test('start and stop process', {
-//   
-//   x: {
-//     run: function() {
-//       this.i = 0;
-//     },
-//     
-//     inc: function() {
-//       if (++this.i == 5)
-//         return false;
-//     }
-//   }
-// },function() {
-//   this.append(x());
-//   this.x.start('inc', 1);
-//   return true;
-// });

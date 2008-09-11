@@ -1,19 +1,16 @@
 bind('tests', {
   
   run: function() {
-    var test, i = 0, message, _bindings = bindings, scope;
+    var test, i = 0, message, _bindings = tree.bindings;
 
     while (!this.failed && (test = tests.shift())) {
       i++;
-      scope = null;
       
       if (test.bindings) {
-        scope = {};
+        tree.bindings = {};
         
         for (var name in test.bindings)
-          scope[name] = Component.extend(test.bindings[name]);
-        
-        bindings = scope;
+          bind(name, test.bindings[name]);
       }
       
       if (test.setup)
@@ -33,7 +30,7 @@ bind('tests', {
         this.update('Failed (' + i + '): ' + message);
       }
       
-      bindings = _bindings;
+      tree.bindings = _bindings;
     }
     
     if (i == 0) {

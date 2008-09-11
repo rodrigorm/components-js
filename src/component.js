@@ -22,29 +22,100 @@ var Component = Class.create({
         return iterator.apply(this.components[name]);
     });
   },
+    
+  apply: function(name) {
+    if (arguments.length == 1) {
+      this.container.addName(name);
+      this[name] = this[name] || true;
+    } else {
+      for (var i = 0; i < arguments.length; i++)
+        this.apply(arguments[i]);
+    }
+  },
+  
+  clear: function(name) {
+    if (arguments.length == 1) {
+      this.container.removeName(name);
+      
+      if (this[name] === true)
+        this[name] = false;
+    } else {
+      for (var i = 0; i < arguments.length; i++)
+        this.clear(arguments[i]);
+    }    
+  },
+  
+  select: function(component) {
+    if (this.selected != component) {
+      if (typeof this.selected == 'object')
+        this.selected.clear('selected');
+
+      if (this.selected = component)
+        this.selected.apply('selected');
+      
+      return component;
+    }
+  },
   
   add: function(element) {
-    var callback, tree = new Tree(element);
+    var container, callback;
     
-    if (tree.i && (tree.i.element == element)) {
-      for (var name in tree.i.components)
+    if (container = this.container.tree.load(element))    
+      for (var name in container.components)
         if (this[callback = 'add' + name.capitalize()])
-          this[callback](tree.i.components[name]);
+          this[callback](container.components[name]);
+  },
+  
+  remove: function() {
+    this.container.remove();
+    return this;
+  },
+  
+  clone: function(deep) {
+    return this.container.clone(deep).components[this.name];
+  },
+  
+  update: function(data) {
+    var o;
+    
+    if (typeof data == 'string') {
+      this.empty();
+      this.element.appendChild(document.createTextNode(data));
+    } else {  
+      for (var name in data) { 
+        if (o = this[name]) {
+          if (o.update) {
+            o.update(data[name]);
+          } else if (o.nodeType == 1) {
+            if (!o.firstChild) {
+              o.appendChild(document.createTextNode(data[name]));
+            } else if (o.firstChild == o.lastChild) {
+              if (o.firstChild.nodeType == 3) {
+                o.firstChild.data = data[name];
+              }
+            }
+          }
+        }
+      }
     }
+    return this;
   },
       
   request: function(method, url, parameters) {
     new Request(this, method, url, parameters).send();
   },
   
-  fade: function(remove) {
+  fade: function(finalize) {
     this.morphO(1, 0, function() {
-      if (remove) this.remove();
+      if (finalize === true)
+        this.remove();
+      else if (finalize)
+        finalize.call(this);
     });
   },
   
-  appear: function() {
-    this.morphO(0, 1);
+  appear: function(finalize) {
+    this.morphO(0, 1, finalize);
   },
   
   morphO: function(i, j, finalize) {
@@ -96,64 +167,18 @@ var Component = Class.create({
         clearInterval(id);
     }, period);
   },
-
-  clone: function(deep) {
-    return new Tree(this.element.cloneNode(deep)).i.components[this.name];
-  },
-  
-  apply: function(name) {
-    if (arguments.length == 1) {
-      this.container.addName(name)
-      this[name] = true;
-    } else {
-      for (var i = 0; i < arguments.length; i++)
-        this.apply(arguments[i]);
-    }
-  },
-  
-  clear: function(name) {
-    if (arguments.length == 1) {
-      this.container.removeName(name);
-      this[name] = false;
-    } else {
-      for (var i = 0; i < arguments.length; i++)
-        this.clear(arguments[i]);
-    }    
-  },
-  
-  select: function(component) {
-    if (this.selected == component)
-      return;
-
-    if (typeof this.selected == 'object') {
-      if (this.selected.selected === true)
-        this.selected.selected = false;
-
-      if (this.selected.container)
-        this.selected.container.removeName('selected');
-    }
     
-    if (this.selected = component) {
-      if (component.container)
-        component.container.addName('selected');
-      
-      if (!component.selected)
-        component.selected = true;
-    }
-    return component;
-  },
-    
-  createListeners: function() {
-    var element, attr;
-    
+  createAllListeners: function() {
     for (var target in this.matches)
-      if (this[target]) {
-        element = this[target].element || this[target];
-        
-        for (var event in this.matches[target])
-          element[attr = 'on' + event] = this.createListener(this.matches[target][event], target, element[attr]);
-          
-      }
+      if (this[target])
+        this.createListeners(target);
+  },
+  
+  createListeners: function(target) {
+    var attr, element = this[target].element || this[target];
+    
+    for (var event in this.matches[target] || {})
+      element[attr = 'on' + event] = this.createListener(this.matches[target][event], target, element[attr]);    
   },
   
   createListener: function(id, target, tail) {
@@ -190,6 +215,8 @@ extend(Component, {
   errors: false,
   
   extend: function(source) {
+    source = source || {};
+    
     return Class.create(extend(extend({
       matches: Component.matchListeners(source)
     }, this.prototype), source));
@@ -224,14 +251,7 @@ extend(Component, {
   }
 });
 
-Component.delegate('update', 'insert', 'append', 'empty', 'collect', 'remove', 'setTag', 'first', 'last');
-
-// for (var i = 0, ids = 'update insert append empty collect remove setTag first last'.split(' '); i < ids.length; i++)
-//   Component.prototype[ids[i]] = function() {
-//     return this.container[ids[i]].apply(this.container, arguments);
-//   }
-  
-  
+Component.delegate('build', 'insert', 'append', 'replace', 'empty', 'collect', 'setTag', 'first', 'last');
 
 String.prototype.capitalize = function() {
   return this.charAt(0).toUpperCase() + this.substring(1);
