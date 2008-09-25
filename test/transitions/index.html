@@ -1,0 +1,54 @@
+<html>
+<head>
+<title>/test</title>
+
+<script type="text/javascript" src="../../src/global.js" charset="utf-8"></script>
+<script type="text/javascript" src="../../src/class.js" charset="utf-8"></script>
+<script type="text/javascript" src="../../src/component.js" charset="utf-8"></script>
+<script type="text/javascript" src="../../src/tree.js" charset="utf-8"></script>
+<script type="text/javascript" src="../../src/request.js" charset="utf-8"></script>
+<script type="text/javascript" src="../../src/ready.js" charset="utf-8"></script>
+
+<style type="text/css" media="screen">
+.item {
+  background: #fff;
+}
+</style>
+
+<script type="text/javascript" charset="utf-8">
+
+bind('list', {
+
+  onClickCreate: function() {
+    this.request('GET', this.create.href);
+    return false;
+  },
+  
+  addItem: function(item) {
+    this.items.append(item).appear();
+  }
+});
+
+bind('items');
+
+bind('item', {
+  
+  onClickRemover: function() {
+    this.fade(true);
+    return false;
+  }
+});
+
+</script>
+
+</head>
+<body id="list">
+  <a id="create" href="_item.html">New</a>
+
+  <ul class="items">
+    <li class="item">
+      Item [<a class="remover" href="#">remove</a>]
+    </li>
+  </ul>
+</body>
+</html>

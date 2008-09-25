@@ -1,0 +1,15 @@
+- Request only does JSON
+
+- insert(object)
+    were - object
+        - string    - create, insert text node
+        - component - move component
+
+- Component#find(match)     (in subtree)
+- Component#seek(id, match) (forwards/backwards)
+- Component#collect(match)
+    where - match:
+        - string   -> matches components with this name
+        - function -> matches components that return true when this function is applied to them
+
+- one handle(event) - search this.matches
