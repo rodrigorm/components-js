@@ -1,5 +1,9 @@
 function test(spawn) {
 
+  test('Load components', function() {
+    test('If an element has several component names, use the first - the rest are flags');
+  });
+
   test('Update with data', function() {
     
     test('Escape HTML text');

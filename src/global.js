@@ -8,7 +8,7 @@ function load(element) {
   var last, top = [];
   
   function visit(element, parent) {
-    var com, flags = {}, all = [];
+    var com, all = [], unknowns = {};
   
     if (element.className)
       all = element.className.split(' ');
@@ -19,24 +19,21 @@ function load(element) {
       name = all[i];
     
       if (Com[name] && !com)
-        com = new Com[name](name, element, flags, parent);
+        com = last = new Com[name](name, element, unknowns, last, parent);
       else
-        flags[name] = true;
-      
-      // if (parent && !parent[name])
-      //   parent[name] = ;
+        unknowns[name] = true;      
     }
     
-    if (com) {
-      if (com.name == element.id)
-        top.push(com);
-
-      if (last) {
-        last.next = com;
-        com.prev  = last;
-      }
-      last = com;      
-    }
+    if (parent)
+      if (com)
+        parent[com.name] = com;
+      else
+        for (var name in unknowns)
+          parent[name] = parent[name] || element;
+    
+    
+    if (com && com.name == element.id)
+      top.push(com);
     
     for (var i = 0, nodes = element.childNodes; i < nodes.length; i++)
       if (nodes[i].nodeType == 1)
