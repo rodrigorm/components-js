@@ -1,11 +1,28 @@
 Com = {};
 
+Listener = /^on(abort|beforeunload|blur|change|click|dblclick|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|reset|resize|select|submit|unload)(\w*)$/i;
+
 function bind(name, source) {
-  Com[name] = Class(copy(copy(Component.prototype), source));
+  Com[name] = Class(copy(copy({}, Component.prototype), source));
+  
+  Com[name].Named = {};
+  
+  var data, event, target;
+  
+  for (var id in source)
+    if (data = id.match(Listener)) {
+      event  = data[1].toLowerCase();
+      target = data[2] ? data[2].charAt(0).toLowerCase() + data[2].substring(1) : 'element';
+
+      Com[name].Named[target] = Com[name].Named[target] || {};
+      Com[name].Named[target][event] = id;
+    }
+
+  return Com[name];
 };
 
 function load(element) {
-  var last, top = [];
+  var last;
   
   function visit(element, parent) {
     var com, all = [], unknowns = {};
@@ -26,14 +43,17 @@ function load(element) {
     
     if (parent)
       if (com)
-        parent[com.name] = com;
+        parent[com.name] = parent[com.name] || com;
       else
         for (var name in unknowns)
-          parent[name] = parent[name] || element;
+          if (!parent[name]) {
+            parent[name] = element;
+            parent.createListeners(name);
+          }
     
     
     if (com && com.name == element.id)
-      top.push(com);
+      Com[name] = com;
     
     for (var i = 0, nodes = element.childNodes; i < nodes.length; i++)
       if (nodes[i].nodeType == 1)
@@ -42,7 +62,7 @@ function load(element) {
     return com;
   };
   
-  return [visit(element), top];
+  return visit(element);
 };
 
 function Class(source) {

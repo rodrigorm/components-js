@@ -30,5 +30,8 @@
     })();
   }
 })(function() {
-  start.apply(this, load(document.body)[1]);
+  load(document.body);
+      
+  if (typeof start == 'function')
+    start();
 });
