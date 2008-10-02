@@ -1,18 +1,33 @@
+1)
+    @contain - don't propagate past this container (since parents will have their own listeners)
+    handle(event, contain)
+
+    MouseEvents = (down up click dblclick)
+    FieldEvents = (focus blur change keydown keyup keypress select)
+
+    init
+        createMouseListeners(this.element)
 
 
+    load
+        if isField
+            com.createFieldListeners(element)
 
-- Request only does JSON
+    createMouseListeners(element)
+        each mouseevent
+            on + event = handle(event, false)
 
-- one handle(event) - search this.matches
+    createFieldListeners(element)
+        each fieldevent
+            on + event = handle(event, false)
+
+    image.onload ?
+    form.onsubmit ?
 
 
-- Component#handle(event)
-    name in this Named
-        if target == this[name]
-            this.exec(type + name)
-    if type_bubbles
-        parent.handle(event)
+2)
+cell.next();
+cell.next(true);
+cell.next(false, 'table');
 
-- Component#exec(id, value)
-    if on + id
-        this[callback](value)
+3) Request only does JSON

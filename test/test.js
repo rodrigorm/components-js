@@ -4,26 +4,22 @@ bind('z');
 
 function test() {
 
-  function assert(name, o, test) {
-    assert.count++;
-    if (!test(o)) throw 'expected ' + name + ': ' + o;
-  };
-
   assert.count = 0;
-
+  
   test('Load components', function() {
     test('multiple component names on a single container', function() {
-      var c = build('x y z');
+      var c = build('a x y b');
       test('use first name only', function() {
         com(c, 'x');
+        undefined(c.y);
       });
-      test('create flags', function() {
-        // flag(c.y);
-        // flag(c.z);
+      test('with flags', function() {
+        flag(c.a);
+        flag(c.b);
       });
     });
   });
-  
+
   test('Access controls', function() {
     var x = build('x',
       tag('a', 'one') + 
@@ -118,26 +114,38 @@ function test() {
   });
 
   test('Set flags', function() {
-    // var x = spawn('x');
-    // 
-    // test('Ignore duplicates', function() {
-    //   x.apply('y');
-    //   x.apply('z');
-    //   x.apply('z');
-    //   return x.element.className == 'y z x';
-    // });
-    // 
-    // test('Remove non-existent flag', function() {
-    //   x.clear('a');
-    //   return x.element.className == 'y z x';
-    // });
-    // 
-    // test('Use the id as a flag name');
+    var x = build('x');
+    
+    test('Ignore duplicates', function() {
+      x.apply('y');
+      x.apply('z');
+      x.apply('z');
+      return x.element.className == 'y z x';
+    });
+    
+    test('Remove non-existent flag', function() {
+      x.clear('a');
+      return x.element.className == 'y z x';
+    });
+    
+    test('Use the id as a flag name');
   });
 
-  test('Event listeners', function() {
-    
-  });
+  // test('Mouse events', function() {
+  //   var x = build('x', tag('a', tag('b'))), n = 0, a = 0, b = 0;
+  //   
+  //   x.onClick  = function() { n++ };
+  //   x.onClickA = function() { a++ };
+  //   x.onClickB = function() { b++ };
+  //   
+  //   x.handle({ type: 'click', target: x.a });
+  //   x.handle({ type: 'click', target: x.b });
+  //   x.handle({ type: 'click', target: x.element });
+  //   
+  //   expect('2 clicks on a', a, 2);
+  //   expect('1 click on b', a, 1);
+  //   expect('3 clicks on element', a, 3);
+  // });
   
   test('Traversal', function() {
     var x = build('x',
@@ -181,6 +189,10 @@ function test() {
       undefined(x1.y);
       undefined(x1.z);
     });
+    
+    test('transform', function() {
+      
+    });
   });
 
   function undefined(o) {
@@ -202,6 +214,15 @@ function test() {
   
   function flag(v) {
     assert('flag', v, function() { return v === true })
+  };
+  
+  function expect(name, a, b) {
+    assert(name, a, function() { return a == b });
+  };
+  
+  function assert(name, o, test) {
+    assert.count++;
+    if (!test(o)) throw 'expected ' + name + ': ' + o;
   };
   
   function test(description, callback) {
@@ -228,18 +249,17 @@ function test() {
 };
 
 function start() {
-
   try {
     var count = test();
   } catch (e) {
-    Com.report.update(e.toString());
-    Com.report.apply('failed');
+    content.update(e.toString());
+    content.apply('failed');
   }
   
-  if (!Com.report.flags.failed) {
-    Com.report.update(count + '/' + count);
-    Com.report.apply('passed');
+  if (count > 0 && !content.flags.failed) {
+    content.update(count + '/' + count);
+    content.apply('passed');
   }    
 };
 
-bind('report');
+bind('content');

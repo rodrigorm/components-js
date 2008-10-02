@@ -4,11 +4,7 @@ Component = Class({
     this.name    = name;
     this.element = element;
     this.flags   = flags;
-    
-    this.createListeners('element');
-    
-    for (var flag in flags) this[flag] = this[flag] || true;
-    
+      
     if (prev) {
       this._prev = prev;
       prev._next = this;
@@ -16,34 +12,95 @@ Component = Class({
     
     if (parent)
       this.parent = this[parent.name] = parent;
+
+    this.createMouseListeners(element);
   },
   
   handle: function(event) {
-    var callback, result, target = event.target, names = Com[this.name].Named;
-
+    var result, id = event.type, node = event.target;
+    
+    id = id.replace('up', 'Up').replace('down', 'Down');
+    
     do {
-      for (var name in names)
-        if (this[name] == target && (callback = names[name][event.type]))
-          if (this[callback](event) === false)
-            result = false;      
-    } while (target = target.parentNode);
+      for (var name in this)
+        if (this[name] == node)
+          if (this.exec(name ==  'element' ? id : [id, name], event) === false)
+            result = false;
+    } while ((node = node.parentNode) != this.element.parentNode);
     
     return result;
   },
   
-  exec: function(cmd, value) {
-    var name = 'on';
+  exec: function(cmd) {
+    var name = 'on', args = [];
     
     if (typeof cmd == 'string')
       cmd = [cmd];
 
     for (var i = 0; i < cmd.length; i++)
-      name += cmd[i].charAt(0).toUpperCase() + cmd[i].substring(1)
+      name += cmd[i].charAt(0).toUpperCase() + cmd[i].substring(1);
 
-    if (this[name])
-      return this[name](value);
+    if (!this[name])
+      return;
+
+    for (var j = 1; j < arguments.length; j++)
+      args.push(arguments[j]);
+
+    return this[name].apply(this, args);
   },
+  
+  fade: function(finalize) {
+    this.morphO(1, 0, function() {
+      if (finalize === true)
+        this.remove();
+      else if (finalize)
+        finalize.call(this);
+    });
+  },
+  
+  appear: function(finalize) {
+    this.morphO(0, 1, finalize);
+  },
+  
+  morphO: function(i, j, finalize) {
+    var s = this.element.style;
     
+    // Trigger hasLayout in IE (fixes text rendering bug)
+    if (window.ActiveXObject)
+      s.width = this.element.offsetWidth + 'px';
+
+    this.morph(i, j, function(k) {
+      s.display = k == 0 ? 'none' : '';
+        
+      if (window.ActiveXObject)
+        s.filter = 'alpha(opacity=' + (k * 100) + ')';
+      else
+        s.opacity = k;
+    }, function() {
+      if (finalize)
+        finalize.call(this);
+
+      s.display = s.opacity = s.filter = '';
+    });
+  },
+
+  morph: function(i, j, iterator, finalize) {
+    var k = i;
+    
+    iterator.call(this, i);
+    
+    this.start(function() {
+      k += (i < j ? 1 : -1) * 0.05;
+      iterator.call(this, Math.round(-100 * (Math.cos(Math.PI * k) - 1) / 2) / 100);
+      
+      if ((j > i && k >= j) || (j < i && k <= j)) {
+        if (finalize)
+          finalize.call(this);
+        return false;
+      }
+    }, 20);
+  },
+  
   start: function(callback, period) {
     var com = this, id = setInterval(function() {
       if (callback.apply(com) === false)
@@ -63,12 +120,12 @@ Component = Class({
   },
   
   apply: function(name) {
-    this.flags[name] = true;
+    this.flags[name] = this[name] = true;
     this.updateNames();
   },
   
   clear: function(name) {
-    this.flags[name] = false;
+    this.flags[name] = this[name] = false;
     this.updateNames();
   },
   
@@ -84,20 +141,24 @@ Component = Class({
     
     this.element.className = parts.join(' ');    
   },
+    
+  update: function(data) {
+    return this.set(data);
+  },
   
-  update: function(data, attributes) {
+  set: function(data) {
     if (typeof data == 'string') {
       this.empty();
       text(this.element).data = data;
     } else {
-      var control, text;
+      var control, node;
       
       for (var name in data) {
         if (control = this[name])        
           if (control.update)
             control.update(data[name]);
-          else if (text = text(control))
-            text.data = data[name];
+          else if (node = text(control))
+            node.data = data[name];
       }
     }
     
@@ -148,8 +209,14 @@ Component = Class({
     return this.insert(name, data);
   },
   
+  transform: function(name) {
+    var com = this.parent.insert(name, this.toData(), this);
+    this.remove();
+    return com;
+  },
+  
   insert: function(name, data, next) {
-    return Com.template.spawn(name, data).move(this, next);
+    return template.spawn(name, data).move(this, next);
   },
   
   move: function(parent, next) {
@@ -158,9 +225,12 @@ Component = Class({
     else
       parent.element.appendChild(this.element);
 
+    var last;
+    if (!next) last = parent.last();
+
     this.detach();
-    next = next || (parent.last() || parent)._next;
-    this.attach(next ? next._prev : parent, parent, next);
+    next = next || (last || parent)._next;
+    this.attach(next ? next._prev : last || parent, parent, next);
         
     return this;
   },
@@ -246,6 +316,8 @@ Component = Class({
     var com = this;
 
     while (com = com[id]) {
+      if (com == template)
+        return;
       if (options.sibling && this.parent && !this.parent.contains(com))
         return;
       if ((!options.sibling || com.parent == this.parent) && com.match(matcher))
@@ -265,12 +337,15 @@ Component = Class({
         this.name == matcher : !!matcher.apply(this)) : true;
   },
   
-  createListeners: function(name) {
-    var com = this;
-    for (var event in Com[this.name].Named[name] || {})
-      this[name]['on' + event] = function(event) {
-        return com.handle(event || window.event);
-      }
+  createMouseListeners: function(element) {
+    var com = this, handler = function(event) { return com.handle(event || window.event) };
+    element.onmousedown = handler;
+    element.onmouseup   = handler;
+    element.onclick     = handler;
+  },
+  
+  toData: function() {
+    return {};
   },
   
   toHTML: function() {
@@ -278,6 +353,6 @@ Component = Class({
   },
     
   toString: function() {
-    return this.element.id || this.element.className;
+    return this.name;
   }
 });
