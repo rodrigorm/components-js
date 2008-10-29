@@ -1,4 +1,4 @@
-1)
+*)
     @contain - don't propagate past this container (since parents will have their own listeners)
     handle(event, contain)
 
@@ -25,9 +25,14 @@
     form.onsubmit ?
 
 
-2)
-cell.next();
-cell.next(true);
-cell.next(false, 'table');
+*)
+    com#data
 
-3) Request only does JSON
+
+*)
+exec
+    matcher = (...)(back(space)|mouse(down)|mouse(up)|dbl(click)) /i
+    name = 1 + 2.capitalize
+
+
+*) Request only does JSON

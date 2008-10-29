@@ -11,7 +11,7 @@ function test() {
       var c = build('a x y b');
       test('use first name only', function() {
         com(c, 'x');
-        undefined(c.y);
+        empty(c.y);
       });
       test('with flags', function() {
         flag(c.a);
@@ -38,7 +38,7 @@ function test() {
       x.y.remove();
       element(x.y.b, 'four');
       x.y.remove();
-      undefined(x.y);
+      empty(x.y);
       
       test('after insertion', function() {
         build('y', tag('b', 'six')).move(x);
@@ -50,19 +50,30 @@ function test() {
     test('have one reference to a control component, ignoring flags', function() {
       var x = build('x', tag('a y'));
       com(x.y, 'y');
-      undefined(x.a);
+      empty(x.a);
     });
   });
   
   test('Access parent', function() {
-    var x = build('x', tag('z')), y = build('y');
-    com(x.z.x, 'x');
+    var x = build('x', tag('y'));
+    
+    com(x.y.x, 'x');
+    com(x.y.parent, 'x');
     
     test('after move', function() {
+      var x = build('x', tag('z')), y = build('y');
       x.z.move(y);
-      undefined(x.z);
+      empty(x.z);
       com(y.z.y, 'y');
-    })
+      com(y.z.parent, 'y');
+    });
+    
+    test('after remove', function() {
+      var x = build('x', tag('y'));
+      y = x.y.remove();
+      empty(y.parent);
+      empty(y.x);
+    });
   });
 
   test('Update data', function() {
@@ -178,25 +189,8 @@ function test() {
     });
   });
     
-  test('Editing', function() {
-    var x1 = build('x', tag('x', tag('x') + tag('y', tag('y')) + tag('z'))).x;
-    var x2 = x1.chop(x1.y);
-    
-    test('chop', function() {
-      com(x1.x, 'x');
-      com(x2.y.y, 'y');
-      com(x2.z, 'z');
-      undefined(x1.y);
-      undefined(x1.z);
-    });
-    
-    test('transform', function() {
-      
-    });
-  });
-
-  function undefined(o) {
-    assert('undefined', o, function() { return typeof o == 'undefined' })
+  function empty(o) {
+    assert('empty', o, function() { return o == null })
   };
   
   function data(o, data) {
@@ -205,7 +199,7 @@ function test() {
   };
   
   function element(o, data) {
-    assert('control', o.innerHTML, function() { return (o || {}).nodeType == 1 && o.innerHTML == data })
+    assert('control', (o || {}).innerHTML, function() { return (o || {}).nodeType == 1 && o.innerHTML == data })
   };
   
   function com(o, name) {

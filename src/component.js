@@ -3,6 +3,7 @@ Component = Class({
   initialize: function(name, element, flags, prev, parent) {
     this.name    = name;
     this.element = element;
+    this.data    = element.textContent || '';
     this.flags   = flags;
       
     if (prev) {
@@ -18,8 +19,6 @@ Component = Class({
   
   handle: function(event) {
     var result, id = event.type, node = event.target;
-    
-    id = id.replace('up', 'Up').replace('down', 'Down');
     
     do {
       for (var name in this)
@@ -38,7 +37,7 @@ Component = Class({
       cmd = [cmd];
 
     for (var i = 0; i < cmd.length; i++)
-      name += cmd[i].charAt(0).toUpperCase() + cmd[i].substring(1);
+      name += (cmd[i].charAt(0).toUpperCase() + cmd[i].substring(1)).replace('up', 'Up').replace('down', 'Down').replace('space', 'Space');
 
     if (!this[name])
       return;
@@ -190,38 +189,18 @@ Component = Class({
       }
     }
   },
-  
-  chop: function(start, name, data) {
-    var com = this.parent.insert(name || this.name, data, this.next(null, true));
     
-    var next, item = start;
-    
-    do {
-      next = item.next(null, true);
-      item.move(com);
-      item = next;
-    } while (item);
-    
-    return com;
-  },
-  
   append: function(name, data) {
     return this.insert(name, data);
   },
-  
-  transform: function(name) {
-    var com = this.parent.insert(name, this.toData(), this);
-    this.remove();
-    return com;
-  },
-  
+    
   insert: function(name, data, next) {
     return template.spawn(name, data).move(this, next);
   },
   
   move: function(parent, next) {
     if (next)
-      parent.element.insertBefore(this.element, next.element);
+      next.element.parentNode.insertBefore(this.element, next.element);
     else
       parent.element.appendChild(this.element);
 
@@ -244,7 +223,8 @@ Component = Class({
   empty: function() {
     var com = this;
     while ((com = this._next) && this.contains(com)) com.detach();
-    this.element.innerHTML = '';
+    while (this.element.firstChild)
+      this.element.removeChild(this.element.firstChild);
   },
   
   attach: function(prev, parent, next) {
@@ -266,8 +246,7 @@ Component = Class({
       if (this.parent[this.name] == this)
         this.parent[this.name] = this.next(this.name, true);
       
-      this.parent[name] = null;
-      this.parent       = null;
+      this.parent = this[this.parent.name] = null;
     }
     
     var i = this, j = this.last() || this;
@@ -302,32 +281,51 @@ Component = Class({
         return result;
   },
   
-  prev: function(matcher, sibling) {
-    return this.seek('prev', matcher, { sibling: sibling });
+  prev: function() {
+    var args = [true];
+    for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
+    return this.seek.apply(this, args);
   },
   
-  next: function(matcher, sibling) {
-    return this.seek('next', matcher, { sibling: sibling });
+  next: function() {
+    var args = [false];
+    for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
+    return this.seek.apply(this, args);
   },
+
+  seek: function(back) {
+    var id = back ? '_prev' : '_next', com = this, matcher, sibling = false;
     
-  seek: function(id, matcher, options) {
-    id = '_' + id;
-
-    var com = this;
-
-    while (com = com[id]) {
-      if (com == template)
-        return;
-      if (options.sibling && this.parent && !this.parent.contains(com))
-        return;
-      if ((!options.sibling || com.parent == this.parent) && com.match(matcher))
-        return com;
+    switch (arguments.length) {
+      case 2: {
+        if (arguments[1] === true || arguments[1] === false)
+          sibling = arguments[1];
+        else
+          matcher = arguments[1];
+        break;
+      }
+      case 3: {
+        sibling = arguments[2];
+        matcher = arguments[1];
+      }
     }
+
+    while ((com = com[id]) && (com != template) && (!sibling || !this.parent || this.parent.contains(com)))
+      if (com.match(matcher) && (!sibling || com.parent == this.parent))
+        return com;
   },
-  
-  contains: function(com) {
-    while (com = com.parent)
-      if (com == this) return true;
+
+  contains: function(o) {
+    if (o.element) {
+      while (o = o.parent)
+        if (o == this) return true;
+    } else {
+      do
+        if (o == this.element)
+          return true;
+      while (o = o.parentNode);
+    }
+    
     return false;
   },
   
