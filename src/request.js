@@ -66,8 +66,8 @@ var Request = Class.create({
         request.dispatch(
           request.transport.status,
           request.getContent(
-            request.transport.responseText),
-            request.transport.getResponseHeader('Content-Type'));
+            request.transport.responseText,
+            request.transport.getResponseHeader('Content-Type')));
 
         request.transport.onreadystatechange = function() {};
       }
